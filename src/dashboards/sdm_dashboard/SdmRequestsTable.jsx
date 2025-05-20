@@ -58,16 +58,15 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
     MODERATE: 2,
     LOW: 1,
   };
-  
+
   const sortByPriority = (a, b, direction = "asc") => {
     const aPriority = priorityOrder[a.request.priority] || 0;
     const bPriority = priorityOrder[b.request.priority] || 0;
-  
+
     if (aPriority < bPriority) return direction === "asc" ? -1 : 1;
     if (aPriority > bPriority) return direction === "asc" ? 1 : -1;
     return 0;
   };
-  
 
   // Sort and filter requests
   const sortedAndFilteredRequests = useMemo(() => {
@@ -110,6 +109,27 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
           return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
         }
 
+        // Sort by category (custom order)
+        if (sortConfig.key === "request.categoryOfReason") {
+          const categoryOrder =
+            sortConfig.direction === "asc"
+              ? {
+                  Personal: 5,
+                  Permanent: 4,
+                  Medical: 1,
+                  Maternity: 3,
+                  "Family Medical": 2,
+                }
+              : {
+                  "Family Medical": 4,
+                  Maternity: 3,
+                  Medical: 5,
+                  Permanent: 2,
+                  Personal: 1,
+                };
+          return categoryOrder[aValue] - categoryOrder[bValue];
+        }
+
         // Default comparison for other fields
         if (aValue < bValue) {
           return sortConfig.direction === "asc" ? -1 : 1;
@@ -128,10 +148,10 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
   const groupedRequests = useMemo(() => {
     if (viewMode === "ungrouped") {
       return {
-        all: { 
-          teamName: "All Requests", 
-          teamOwnerName: "", 
-          requests: sortedAndFilteredRequests 
+        all: {
+          teamName: "All Requests",
+          teamOwnerName: "",
+          requests: sortedAndFilteredRequests,
         },
       };
     }
@@ -141,10 +161,10 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
       const ownerId = request.teamOwnerId;
 
       if (!acc[ownerId]) {
-        acc[ownerId] = { 
-          teamOwnerName, 
-          teamName: teamName || teamOwnerName, 
-          requests: [] 
+        acc[ownerId] = {
+          teamOwnerName,
+          teamName: teamName || teamOwnerName,
+          requests: [],
         };
       }
       acc[ownerId].requests.push(requestData);
@@ -229,7 +249,8 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
           {viewMode === "grouped" && (
             <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-medium text-gray-900">
-                {group.teamName} - {group.teamOwnerName} {teamOwnerId !== "all" && `(ID: ${teamOwnerId})`}
+                {group.teamName} - {group.teamOwnerName}{" "}
+                {teamOwnerId !== "all" && `(ID: ${teamOwnerId})`}
               </h3>
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-500">
@@ -246,7 +267,8 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
             </div>
           )}
 
-          {(viewMode === "ungrouped" || expandedTeams[teamOwnerId] !== false) && (
+          {(viewMode === "ungrouped" ||
+            expandedTeams[teamOwnerId] !== false) && (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -260,8 +282,11 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
                     >
                       Dates {getSortIndicator("request.requestedStartDate")}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
-                      Reason
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => requestSort("request.categoryOfReason")}
+                    >
+                      Category {getSortIndicator("request.categoryOfReason")}
                     </th>
                     <th
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6 cursor-pointer"
@@ -294,7 +319,7 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
                       hrStatus,
                       sdmUpdatedDate,
                       teamOwnerName,
-                      teamName
+                      teamName,
                     }) => (
                       <tr key={request.requestId} className="hover:bg-gray-50">
                         <td className="px-6 py-4">

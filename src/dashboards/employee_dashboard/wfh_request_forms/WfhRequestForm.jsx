@@ -156,7 +156,7 @@ const WfhRequestForm = () => {
       setMessage(response.data);
 
       setTimeout(() => {
-        navigate('/employee');
+        navigate('/');
       }, 2000);
     } catch (err) {
       toast.error("Submission failed.");

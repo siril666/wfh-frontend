@@ -198,7 +198,7 @@ const WfhRequestFormEdit = () => {
       const response = await updateEditedRequestDetails(data);
       toast.success("Request submitted successfully!");
       setMessage(response.data);
-      setTimeout(() => navigate("/employee"), 2000);
+      setTimeout(() => navigate("/"), 2000);
     } catch (err) {
       toast.error("Submission failed.");
       console.error("Submission Error:", err);

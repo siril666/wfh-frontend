@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import HRRequestsTable from "./HRRequestsTable";
+import HRRequestsTable from "./HRrequestsTable";
 import { getAllWFHRequestForHR, getProfile } from "../../api/apiService";
 import SummaryCards from "./SummaryCards";
 

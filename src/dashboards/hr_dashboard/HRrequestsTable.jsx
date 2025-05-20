@@ -4,25 +4,25 @@ import { useNavigate } from "react-router-dom";
 const statusStyles = {
   APPROVED: "bg-green-100 text-green-800",
   PENDING: "bg-orange-100 text-orange-800",
-  REJECTED: "bg-red-100 text-red-800"
+  REJECTED: "bg-red-100 text-red-800",
 };
 
 const statusLabels = {
   APPROVED: "Approved",
   PENDING: "Pending",
-  REJECTED: "Rejected"
+  REJECTED: "Rejected",
 };
 
 const priorityStyles = {
   HIGH: "bg-red-100 text-red-800",
   MODERATE: "bg-yellow-100 text-yellow-800",
-  LOW: "bg-green-100 text-green-800"
+  LOW: "bg-green-100 text-green-800",
 };
 
 const priorityLabels = {
   HIGH: "High",
   MODERATE: "Medium",
-  LOW: "Low"
+  LOW: "Low",
 };
 
 const HRRequestsTable = ({ requests, activeFilter }) => {
@@ -59,7 +59,6 @@ const HRRequestsTable = ({ requests, activeFilter }) => {
     setSortConfig({ key, direction });
   };
 
-  // Sort and filter requests
   const sortedAndFilteredRequests = useMemo(() => {
     let filteredRequests = [...requests];
 
@@ -80,27 +79,52 @@ const HRRequestsTable = ({ requests, activeFilter }) => {
     // Apply sorting
     if (sortConfig.key) {
       filteredRequests.sort((a, b) => {
-        // Handle nested properties
-        const getValue = (obj, path) => 
-          path.split('.').reduce((o, p) => (o || {})[p], obj);
-        
+        const getValue = (obj, path) =>
+          path.split(".").reduce((o, p) => (o || {})[p], obj);
+
         const aValue = getValue(a, sortConfig.key);
         const bValue = getValue(b, sortConfig.key);
 
-        // Special handling for dates
-        if (sortConfig.key.includes('Date')) {
+        // Sort by date
+        if (sortConfig.key === "request.requestedStartDate") {
           const dateA = new Date(aValue);
           const dateB = new Date(bValue);
           return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
         }
 
-        // Default comparison for other fields
-        if (aValue < bValue) {
-          return sortConfig.direction === "asc" ? -1 : 1;
+        // Sort by priority (custom order)
+        if (sortConfig.key === "request.priority") {
+          const priorityOrder =
+            sortConfig.direction === "asc"
+              ? { LOW: 1, MODERATE: 2, HIGH: 3 }
+              : { HIGH: 1, MODERATE: 2, LOW: 3 };
+          return priorityOrder[aValue] - priorityOrder[bValue];
         }
-        if (aValue > bValue) {
-          return sortConfig.direction === "asc" ? 1 : -1;
+
+        // Sort by category (custom order)
+        if (sortConfig.key === "request.categoryOfReason") {
+          const categoryOrder =
+            sortConfig.direction === "asc"
+              ? {
+                  Personal: 5,
+                  Permanent: 4,
+                  Medical: 1,
+                  Maternity: 3,
+                  "Family Medical": 2,
+                }
+              : {
+                  "Family Medical": 4,
+                  Maternity: 3,
+                  Medical: 5,
+                  Permanent: 2,
+                  Personal: 1,
+                };
+          return categoryOrder[aValue] - categoryOrder[bValue];
         }
+
+        // Fallback generic string comparison
+        if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
       });
     }
@@ -111,7 +135,9 @@ const HRRequestsTable = ({ requests, activeFilter }) => {
   // Group requests based on current grouping preference
   const groupedRequests = useMemo(() => {
     if (groupBy === "none") {
-      return { "all": { name: "All Requests", requests: sortedAndFilteredRequests } };
+      return {
+        all: { name: "All Requests", requests: sortedAndFilteredRequests },
+      };
     }
 
     return sortedAndFilteredRequests.reduce((acc, requestData) => {
@@ -182,7 +208,9 @@ const HRRequestsTable = ({ requests, activeFilter }) => {
           <button
             onClick={() => setGroupBy("none")}
             className={`px-3 py-1 text-sm rounded-md ${
-              groupBy === "none" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"
+              groupBy === "none"
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-200 text-gray-700"
             }`}
           >
             No Grouping
@@ -190,7 +218,9 @@ const HRRequestsTable = ({ requests, activeFilter }) => {
           <button
             onClick={() => setGroupBy("team")}
             className={`px-3 py-1 text-sm rounded-md ${
-              groupBy === "team" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"
+              groupBy === "team"
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-200 text-gray-700"
             }`}
           >
             Group by Team
@@ -198,7 +228,9 @@ const HRRequestsTable = ({ requests, activeFilter }) => {
           <button
             onClick={() => setGroupBy("sdm")}
             className={`px-3 py-1 text-sm rounded-md ${
-              groupBy === "sdm" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"
+              groupBy === "sdm"
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-200 text-gray-700"
             }`}
           >
             Group by SDM
@@ -208,7 +240,10 @@ const HRRequestsTable = ({ requests, activeFilter }) => {
 
       {/* Requests Table */}
       {Object.entries(groupedRequests).map(([groupKey, group]) => (
-        <div key={groupKey} className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div
+          key={groupKey}
+          className="bg-white rounded-lg shadow-sm overflow-hidden"
+        >
           {groupBy !== "none" && (
             <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-medium text-gray-900">
@@ -216,7 +251,8 @@ const HRRequestsTable = ({ requests, activeFilter }) => {
               </h3>
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-500">
-                  {group.requests.length} request{group.requests.length !== 1 ? "s" : ""}
+                  {group.requests.length} request
+                  {group.requests.length !== 1 ? "s" : ""}
                 </span>
                 <button
                   onClick={() => toggleGroupExpand(groupKey)}
@@ -236,19 +272,19 @@ const HRRequestsTable = ({ requests, activeFilter }) => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Employee
                     </th>
-                    <th 
+                    <th
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                       onClick={() => requestSort("request.requestedStartDate")}
                     >
                       Dates {getSortIndicator("request.requestedStartDate")}
                     </th>
-                    <th 
+                    <th
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                       onClick={() => requestSort("request.categoryOfReason")}
                     >
                       Category {getSortIndicator("request.categoryOfReason")}
                     </th>
-                    <th 
+                    <th
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                       onClick={() => requestSort("request.priority")}
                     >
@@ -257,9 +293,9 @@ const HRRequestsTable = ({ requests, activeFilter }) => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Location
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Team Status
-                    </th>
+                    {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Overall Status
+                    </th> */}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       HR Status
                     </th>
@@ -269,76 +305,108 @@ const HRRequestsTable = ({ requests, activeFilter }) => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {group.requests.map(({ request, hrStatus, hrUpdatedDate, userName, teamOwnerName }) => (
-                    <tr key={request.requestId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">{userName}</div>
-                        <div className="text-sm text-gray-500">ID: {request.ibsEmpId}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {new Date(request.requestedStartDate).toLocaleDateString()} - {' '}
-                          {new Date(request.requestedEndDate).toLocaleDateString()}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {request.termDuration}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {request.categoryOfReason}
-                        </div>
-                        <div className="text-sm text-gray-500 truncate max-w-xs">
-                          {request.employeeReason}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          priorityStyles[request.priority]
-                        }`}>
-                          {priorityLabels[request.priority]}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{request.currentLocation}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                  {group.requests.map(
+                    ({
+                      request,
+                      hrStatus,
+                      hrUpdatedDate,
+                      userName,
+                      teamOwnerName,
+                    }) => (
+                      <tr key={request.requestId} className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {userName}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            ID: {request.ibsEmpId}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {new Date(
+                              request.requestedStartDate
+                            ).toLocaleDateString()}{" "}
+                            -{" "}
+                            {new Date(
+                              request.requestedEndDate
+                            ).toLocaleDateString()}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {request.termDuration}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {request.categoryOfReason}
+                          </div>
+                          <div className="text-sm text-gray-500 truncate max-w-xs">
+                            {request.employeeReason}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              priorityStyles[request.priority]
+                            }`}
+                          >
+                            {priorityLabels[request.priority]}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {request.currentLocation}
+                          </div>
+                        </td>
+                        {/* <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                           statusStyles[request.status]
                         }`}>
                           {statusLabels[request.status]}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          statusStyles[hrStatus || "PENDING"]
-                        }`}>
-                          {statusLabels[hrStatus || "PENDING"]}
-                        </span>
-                        {hrUpdatedDate && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {new Date(hrUpdatedDate).toLocaleDateString()}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => navigate(`/hr-dashboard/request-details/${request.requestId}`)}
-                          className="text-indigo-600 hover:text-indigo-900 mr-4"
-                        >
-                          View
-                        </button>
-                        {hrStatus === "PENDING" && (
-                          <button
-                            onClick={() => navigate(`/hr-dashboard/request-details/${request.requestId}`)}
-                            className="text-green-600 hover:text-green-900"
+                      </td> */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              statusStyles[hrStatus || "PENDING"]
+                            }`}
                           >
-                            Review
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                            {statusLabels[hrStatus || "PENDING"]}
+                          </span>
+                          {hrUpdatedDate && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              {new Date(hrUpdatedDate).toLocaleDateString()}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          {hrStatus === "PENDING" ? (
+                            <button
+                              onClick={() =>
+                                navigate(
+                                  `/hr-dashboard/request-details/${request.requestId}`
+                                )
+                              }
+                              className="text-green-600 hover:text-green-900"
+                            >
+                              Review
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() =>
+                                navigate(
+                                  `/hr-dashboard/request-details/${request.requestId}`
+                                )
+                              }
+                              className="text-indigo-600 hover:text-indigo-900 mr-4"
+                            >
+                              View
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  )}
                 </tbody>
               </table>
             </div>
