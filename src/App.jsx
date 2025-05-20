@@ -132,8 +132,12 @@ function App() {
 const RootRedirect = () => {
   const { user } = useAuth();
 
-  if (!user) return null; // ProtectedRoute already handles this
-
+  console.log(user);
+  
+  if (!user) {
+    return <Navigate to="/login" replace /> ;
+  }
+  
   switch (user.role) {
     case "EMPLOYEE":
       return <Navigate to="/employee-dashboard" replace />;

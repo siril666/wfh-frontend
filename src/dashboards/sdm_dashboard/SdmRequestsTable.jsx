@@ -4,25 +4,25 @@ import { useNavigate } from "react-router-dom";
 const statusStyles = {
   APPROVED: "bg-green-100 text-green-800",
   PENDING: "bg-orange-100 text-orange-800",
-  REJECTED: "bg-red-100 text-red-800"
+  REJECTED: "bg-red-100 text-red-800",
 };
 
 const statusLabels = {
   APPROVED: "Approved",
   PENDING: "Pending",
-  REJECTED: "Rejected"
+  REJECTED: "Rejected",
 };
 
 const priorityStyles = {
   HIGH: "bg-red-100 text-red-800",
   MODERATE: "bg-yellow-100 text-yellow-800",
-  LOW: "bg-green-100 text-green-800"
+  LOW: "bg-green-100 text-green-800",
 };
 
 const priorityLabels = {
   HIGH: "High",
   MODERATE: "Medium",
-  LOW: "Low"
+  LOW: "Low",
 };
 
 const SdmRequestsTable = ({ requests, activeFilter }) => {
@@ -33,7 +33,7 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
     key: "request.requestedStartDate",
     direction: "desc", // Default: recent first
   });
-  const [groupByTeam, setGroupByTeam] = useState(true); // Toggle for team grouping
+  const [viewMode, setViewMode] = useState("grouped"); // 'grouped' or 'ungrouped'
 
   // Initialize expanded state when requests load
   useEffect(() => {
@@ -53,6 +53,22 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
     setSortConfig({ key, direction });
   };
 
+  const priorityOrder = {
+    HIGH: 3,
+    MODERATE: 2,
+    LOW: 1,
+  };
+  
+  const sortByPriority = (a, b, direction = "asc") => {
+    const aPriority = priorityOrder[a.request.priority] || 0;
+    const bPriority = priorityOrder[b.request.priority] || 0;
+  
+    if (aPriority < bPriority) return direction === "asc" ? -1 : 1;
+    if (aPriority > bPriority) return direction === "asc" ? 1 : -1;
+    return 0;
+  };
+  
+
   // Sort and filter requests
   const sortedAndFilteredRequests = useMemo(() => {
     let filteredRequests = [...requests];
@@ -60,28 +76,35 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
     // Apply search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filteredRequests = filteredRequests.filter(({ request, employeeName }) => {
-        return (
-          employeeName.toLowerCase().includes(term) ||
-          request.ibsEmpId.toString().includes(term) ||
-          request.employeeReason.toLowerCase().includes(term) ||
-          request.categoryOfReason.toLowerCase().includes(term)
-        );
-      });
+      filteredRequests = filteredRequests.filter(
+        ({ request, employeeName }) => {
+          return (
+            employeeName.toLowerCase().includes(term) ||
+            request.ibsEmpId.toString().includes(term) ||
+            request.employeeReason.toLowerCase().includes(term) ||
+            request.categoryOfReason.toLowerCase().includes(term)
+          );
+        }
+      );
     }
 
     // Apply sorting
     if (sortConfig.key) {
       filteredRequests.sort((a, b) => {
         // Handle nested properties
-        const getValue = (obj, path) => 
-          path.split('.').reduce((o, p) => (o || {})[p], obj);
-        
+        const getValue = (obj, path) =>
+          path.split(".").reduce((o, p) => (o || {})[p], obj);
+
         const aValue = getValue(a, sortConfig.key);
         const bValue = getValue(b, sortConfig.key);
 
-        // Special handling for dates
-        if (sortConfig.key.includes('Date')) {
+        // Handle priority sort
+        if (sortConfig.key === "request.priority") {
+          return sortByPriority(a, b, sortConfig.direction);
+        }
+
+        // Handle date sort
+        if (sortConfig.key.includes("Date")) {
           const dateA = new Date(aValue);
           const dateB = new Date(bValue);
           return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
@@ -103,21 +126,31 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
 
   // Group requests by teamOwnerId if grouping is enabled
   const groupedRequests = useMemo(() => {
-    if (!groupByTeam) {
-      return { "all": { name: "All Requests", requests: sortedAndFilteredRequests } };
+    if (viewMode === "ungrouped") {
+      return {
+        all: { 
+          teamName: "All Requests", 
+          teamOwnerName: "", 
+          requests: sortedAndFilteredRequests 
+        },
+      };
     }
 
     return sortedAndFilteredRequests.reduce((acc, requestData) => {
-      const { request, teamOwnerName } = requestData;
+      const { request, teamOwnerName, teamName } = requestData;
       const ownerId = request.teamOwnerId;
 
       if (!acc[ownerId]) {
-        acc[ownerId] = { teamOwnerName, requests: [] };
+        acc[ownerId] = { 
+          teamOwnerName, 
+          teamName: teamName || teamOwnerName, 
+          requests: [] 
+        };
       }
       acc[ownerId].requests.push(requestData);
       return acc;
     }, {});
-  }, [sortedAndFilteredRequests, groupByTeam]);
+  }, [sortedAndFilteredRequests, viewMode]);
 
   const toggleTeamExpand = (teamOwnerId) => {
     setExpandedTeams((prev) => ({
@@ -162,30 +195,46 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
           </div>
         </div>
 
-        {/* Grouping Toggle */}
-        <div className="flex items-center">
+        {/* View Mode Toggle */}
+        <div className="flex items-center space-x-2">
           <button
-            onClick={() => setGroupByTeam(!groupByTeam)}
+            onClick={() => setViewMode("grouped")}
             className={`px-3 py-1 text-sm rounded-md ${
-              groupByTeam ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"
+              viewMode === "grouped"
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
-            {groupByTeam ? "Grouped by Team" : "Ungrouped View"}
+            Grouped by Team
+          </button>
+          <button
+            onClick={() => setViewMode("ungrouped")}
+            className={`px-3 py-1 text-sm rounded-md ${
+              viewMode === "ungrouped"
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            Ungrouped View
           </button>
         </div>
       </div>
 
       {/* Requests Table */}
       {Object.entries(groupedRequests).map(([teamOwnerId, group]) => (
-        <div key={teamOwnerId} className="bg-white rounded-lg shadow-sm overflow-hidden">
-          {groupByTeam && (
+        <div
+          key={teamOwnerId}
+          className="bg-white rounded-lg shadow-sm overflow-hidden"
+        >
+          {viewMode === "grouped" && (
             <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-medium text-gray-900">
-                Team: {group.teamOwnerName} (ID: {teamOwnerId})
+                {group.teamName} - {group.teamOwnerName} {teamOwnerId !== "all" && `(ID: ${teamOwnerId})`}
               </h3>
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-500">
-                  {group.requests.length} request{group.requests.length !== 1 ? "s" : ""}
+                  {group.requests.length} request
+                  {group.requests.length !== 1 ? "s" : ""}
                 </span>
                 <button
                   onClick={() => toggleTeamExpand(teamOwnerId)}
@@ -197,7 +246,7 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
             </div>
           )}
 
-          {(!groupByTeam || expandedTeams[teamOwnerId] !== false) && (
+          {(viewMode === "ungrouped" || expandedTeams[teamOwnerId] !== false) && (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -205,7 +254,7 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
                       Employee
                     </th>
-                    <th 
+                    <th
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6 cursor-pointer"
                       onClick={() => requestSort("request.requestedStartDate")}
                     >
@@ -214,6 +263,17 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
                       Reason
                     </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6 cursor-pointer"
+                      onClick={() => requestSort("request.priority")}
+                    >
+                      Priority {getSortIndicator("request.priority")}
+                    </th>
+                    {viewMode === "grouped" && (
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                        Team
+                      </th>
+                    )}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
                       SDM Status
                     </th>
@@ -226,76 +286,120 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {group.requests.map(({ request, employeeName, sdmStatus, hrStatus, sdmUpdatedDate }) => (
-                    <tr key={request.requestId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {employeeName}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          ID: {request.ibsEmpId}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {new Date(request.requestedStartDate).toLocaleDateString()} - {' '}
-                          {new Date(request.requestedEndDate).toLocaleDateString()}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {request.termDuration}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {request.categoryOfReason}
-                        </div>
-                        <div className="text-sm text-gray-500 truncate max-w-xs">
-                          {request.employeeReason}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          statusStyles[sdmStatus || "PENDING"]
-                        }`}>
-                          {statusLabels[sdmStatus || "PENDING"]}
-                        </span>
-                        {sdmUpdatedDate && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {new Date(sdmUpdatedDate).toLocaleDateString()}
+                  {group.requests.map(
+                    ({
+                      request,
+                      employeeName,
+                      sdmStatus,
+                      hrStatus,
+                      sdmUpdatedDate,
+                      teamOwnerName,
+                      teamName
+                    }) => (
+                      <tr key={request.requestId} className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {employeeName}
                           </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {hrStatus ? (
-                          <>
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              statusStyles[hrStatus]
-                            }`}>
-                              {statusLabels[hrStatus]}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-xs text-gray-500">Not reviewed</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => navigate(`/sdm-dashboard/request-details/${request.requestId}`)}
-                          className="text-indigo-600 hover:text-indigo-900 mr-4"
-                        >
-                          View
-                        </button>
-                        {sdmStatus === "PENDING" && (
-                          <button
-                            onClick={() => navigate(`/sdm-dashboard/request-details/${request.requestId}`)}
-                            className="text-green-600 hover:text-green-900"
+                          <div className="text-sm text-gray-500">
+                            ID: {request.ibsEmpId}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {new Date(
+                              request.requestedStartDate
+                            ).toLocaleDateString()}{" "}
+                            -{" "}
+                            {new Date(
+                              request.requestedEndDate
+                            ).toLocaleDateString()}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {request.termDuration}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {request.categoryOfReason}
+                          </div>
+                          <div className="text-sm text-gray-500 truncate max-w-xs">
+                            {request.employeeReason}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              priorityStyles[request.priority || "LOW"]
+                            }`}
                           >
-                            Review
-                          </button>
+                            {priorityLabels[request.priority || "LOW"]}
+                          </span>
+                        </td>
+                        {viewMode === "grouped" && (
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {teamName || teamOwnerName}
+                            </div>
+                          </td>
                         )}
-                      </td>
-                    </tr>
-                  ))}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              statusStyles[sdmStatus || "PENDING"]
+                            }`}
+                          >
+                            {statusLabels[sdmStatus || "PENDING"]}
+                          </span>
+                          {sdmUpdatedDate && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              {new Date(sdmUpdatedDate).toLocaleDateString()}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {hrStatus ? (
+                            <>
+                              <span
+                                className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusStyles[hrStatus]}`}
+                              >
+                                {statusLabels[hrStatus]}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-xs text-gray-500">
+                              Not reviewed
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          {sdmStatus === "PENDING" ? (
+                            <button
+                              onClick={() =>
+                                navigate(
+                                  `/sdm-dashboard/request-details/${request.requestId}`
+                                )
+                              }
+                              className="text-green-600 hover:text-green-900"
+                            >
+                              Review
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() =>
+                                navigate(
+                                  `/sdm-dashboard/request-details/${request.requestId}`
+                                )
+                              }
+                              className="text-indigo-600 hover:text-indigo-900 mr-4"
+                            >
+                              View
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  )}
                 </tbody>
               </table>
             </div>

@@ -37,14 +37,24 @@ const WfhRequestForm = () => {
   const calculateTermDuration = () => {
     const start = new Date(formData.requestedStartDate);
     const end = new Date(formData.requestedEndDate);
-    const timeDiff = end - start;
-    const days = timeDiff / (1000 * 3600 * 24);
+  
+    let count = 0;
+    let current = new Date(start);
+  
+    while (current <= end) {
+      const day = current.getDay();
+      if (day !== 0 && day !== 6) { // 0 = Sunday, 6 = Saturday
+        count++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+  
     setFormData(prev => ({
       ...prev,
-      termDuration: days > 0 ? `${days} Days` : ''
+      termDuration: count > 0 ? `${count} Working Days` : ''
     }));
   };
-
+  
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     if (!token) return;

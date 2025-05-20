@@ -47,13 +47,24 @@ const WfhRequestFormEdit = () => {
   const calculateTermDuration = () => {
     const start = new Date(formData.requestedStartDate);
     const end = new Date(formData.requestedEndDate);
-    const timeDiff = end - start;
-    const days = timeDiff / (1000 * 3600 * 24);
+  
+    let workingDays = 0;
+    let current = new Date(start);
+  
+    while (current <= end) {
+      const day = current.getDay();
+      if (day !== 0 && day !== 6) { // Exclude Sundays (0) and Saturdays (6)
+        workingDays++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+  
     setFormData((prevData) => ({
       ...prevData,
-      termDuration: days > 0 ? `${days} Days` : "",
+      termDuration: workingDays > 0 ? `${workingDays} Working Days` : "",
     }));
   };
+  
 
   const handleCancel = () => {
     setCancelLoading(true);

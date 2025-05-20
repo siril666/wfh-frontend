@@ -1,0 +1,462 @@
+-- =============================================
+-- Database Setup for WFH Request System
+-- Includes: Tables, Sample Data, and Verification Queries
+-- =============================================
+
+-- Clean up existing tables (if any)
+DROP TABLE IF EXISTS approval_workflow;
+DROP TABLE IF EXISTS wfh_request;
+DROP TABLE IF EXISTS employee_info;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS employee_master;
+
+-- =============================================
+-- Table Creation
+-- =============================================
+
+-- Employee Master Table
+CREATE TABLE employee_master (
+    ibs_emp_id INT PRIMARY KEY,
+    expediafgname VARCHAR(100),
+    project_id INT,
+    job_level VARCHAR(10),
+    role VARCHAR(100),
+    rate DECIMAL(10,2),
+    hm VARCHAR(100),
+    country VARCHAR(50),
+    location VARCHAR(50),
+    sow_team_name VARCHAR(100),
+    svp_org VARCHAR(100),
+    vp_org VARCHAR(100),
+    director_org VARCHAR(100),
+    team VARCHAR(50),
+    team_owner VARCHAR(100),
+    team_owner_id INT,
+    dm VARCHAR(100),
+    dm_id INT,
+    billability VARCHAR(20),
+    remarks TEXT
+);
+
+-- Users Table
+CREATE TABLE users (
+    uid UUID PRIMARY KEY,
+    ibs_emp_id INT UNIQUE,
+    password VARCHAR(100),
+    roles VARCHAR(100)[],
+    FOREIGN KEY (ibs_emp_id) REFERENCES employee_master(ibs_emp_id)
+);
+
+-- Employee Info Table
+CREATE TABLE employee_info (
+    id SERIAL PRIMARY KEY,
+    ibs_emp_id INT UNIQUE,
+    user_name VARCHAR(100),
+    role VARCHAR(50),
+    email_id VARCHAR(100),
+    phone_number VARCHAR(20),
+    location VARCHAR(50),
+    country VARCHAR(50),
+    admin_verified BOOLEAN,
+    FOREIGN KEY (ibs_emp_id) REFERENCES employee_master(ibs_emp_id)
+);
+
+-- WFH Request Table
+CREATE TABLE wfh_request (
+    request_id INT PRIMARY KEY,
+    ibs_emp_id INT,
+    requested_start_date DATE,
+    requested_end_date DATE,
+    employee_reason TEXT,
+    category_of_reason VARCHAR(50),
+    status VARCHAR(20),
+    team_owner_id INT,
+    dm_id INT,
+    term_duration VARCHAR(20),
+    priority VARCHAR(20),
+    current_location VARCHAR(50),
+    attachment_path TEXT,
+    FOREIGN KEY (ibs_emp_id) REFERENCES employee_master(ibs_emp_id)
+);
+
+-- Approval Workflow Table
+CREATE TABLE approval_workflow (
+    workflow_id INT PRIMARY KEY,
+    request_id INT,
+    approver_id INT,
+    level VARCHAR(20),
+    status VARCHAR(20),
+    updated_by VARCHAR(100),
+    updated_date DATE,
+    FOREIGN KEY (request_id) REFERENCES wfh_request(request_id)
+);
+
+-- =============================================
+-- Sample Data Insertion
+-- =============================================
+
+-- Insert employees into employee_master (200001-200015)
+INSERT INTO employee_master (
+    ibs_emp_id, expediafgname, project_id, job_level, role, rate, hm, country, location,
+    sow_team_name, svp_org, vp_org, director_org, team, team_owner, team_owner_id,
+    dm, dm_id, billability, remarks
+) VALUES
+-- Employees under Team A (Manager 210101, DM 210201)
+(200001, 'Ravi Kumar', 101, 'JL4', 'senior solution engineer', 50.00, 'Hari Nair', 'India', 'Bangalore', 'API Team', 'SVP-Eng', 'VP-TechOps', 'Dir-India', 'Team A', 'Renjith', 210101, 'Arun Menon', 210201, 'Billed', 'WFH for medical reason'),
+(200002, 'Neha Sharma', 101, 'JL4', 'solution engineer', 48.50, 'Hari Nair', 'India', 'Bangalore', 'API Team', 'SVP-Eng', 'VP-TechOps', 'Dir-India', 'Team A', 'Renjith', 210101, 'Arun Menon', 210201, 'Billed', 'Doctor appointment'),
+(200003, 'Amit Roy', 101, 'JL5', 'solution engineer', 53.00, 'Hari Nair', 'India', 'Bangalore', 'API Team', 'SVP-Eng', 'VP-TechOps', 'Dir-India', 'Team A', 'Renjith', 210101, 'Arun Menon', 210201, 'Unbilled', 'Family emergency'),
+(200004, 'Divya Nair', 101, 'JL3', 'solution engineer', 45.00, 'Hari Nair', 'India', 'Bangalore', 'API Team', 'SVP-Eng', 'VP-TechOps', 'Dir-India', 'Team A', 'Renjith', 210101, 'Arun Menon', 210201, 'Unbilled', 'Family event'),
+(200005, 'Sneha Iyer', 101, 'JL4', 'senior solution engineer', 51.00, 'Hari Nair', 'India', 'Bangalore', 'API Team', 'SVP-Eng', 'VP-TechOps', 'Dir-India', 'Team A', 'Renjith', 210101, 'Arun Menon', 210201, 'Billed', 'Long-term remote WFH'),
+
+-- Employees under Team B (Manager 210102, DM 210201)
+(200006, 'Kiran Das', 102, 'JL5', 'solution engineer', 55.00, 'Hari Nair', 'India', 'Chennai', 'UI Team', 'SVP-Eng', 'VP-Apps', 'Dir-India', 'Team B', 'Jasmine', 210102, 'Arun Menon', 210201, 'Billed', 'Personal work'),
+(200007, 'Meera S', 102, 'JL4', 'solution engineer', 47.00, 'Hari Nair', 'India', 'Chennai', 'UI Team', 'SVP-Eng', 'VP-Apps', 'Dir-India', 'Team B', 'Jasmine', 210102, 'Arun Menon', 210201, 'Billed', 'Health issues'),
+(200008, 'Rajeev Menon', 102, 'JL5', 'senior solution engineer', 58.00, 'Hari Nair', 'India', 'Chennai', 'UI Team', 'SVP-Eng', 'VP-Apps', 'Dir-India', 'Team B', 'Jasmine', 210102, 'Arun Menon', 210201, 'Unbilled', 'Personal commitment'),
+(200009, 'Priya Patel', 102, 'JL3', 'solution engineer', 42.00, 'Hari Nair', 'India', 'Chennai', 'UI Team', 'SVP-Eng', 'VP-Apps', 'Dir-India', 'Team B', 'Jasmine', 210102, 'Arun Menon', 210201, 'Billed', 'Project work'),
+(200010, 'Vikram Singh', 102, 'JL4', 'solution engineer', 49.00, 'Hari Nair', 'India', 'Chennai', 'UI Team', 'SVP-Eng', 'VP-Apps', 'Dir-India', 'Team B', 'Jasmine', 210102, 'Arun Menon', 210201, 'Billed', 'Client requirements'),
+
+-- Employees under Team C (Manager 210103, DM 210202)
+(200011, 'Ananya Gupta', 103, 'JL4', 'senior solution engineer', 52.00, 'Hari Nair', 'India', 'Delhi', 'Backend Team', 'SVP-Eng', 'VP-Infra', 'Dir-India', 'Team C', 'Aswin', 210103, 'Deepa M', 210202, 'Billed', 'Technical lead'),
+(200012, 'Rahul Verma', 103, 'JL5', 'solution engineer', 54.00, 'Hari Nair', 'India', 'Delhi', 'Backend Team', 'SVP-Eng', 'VP-Infra', 'Dir-India', 'Team C', 'Aswin', 210103, 'Deepa M', 210202, 'Unbilled', 'New joinee'),
+(200013, 'Shreya Joshi', 103, 'JL3', 'solution engineer', 44.00, 'Hari Nair', 'India', 'Delhi', 'Backend Team', 'SVP-Eng', 'VP-Infra', 'Dir-India', 'Team C', 'Aswin', 210103, 'Deepa M', 210202, 'Billed', 'Critical project'),
+(200014, 'Aditya Rao', 103, 'JL4', 'solution engineer', 48.00, 'Hari Nair', 'India', 'Delhi', 'Backend Team', 'SVP-Eng', 'VP-Infra', 'Dir-India', 'Team C', 'Aswin', 210103, 'Deepa M', 210202, 'Billed', 'Support role'),
+(200015, 'Nandini Reddy', 103, 'JL5', 'senior solution engineer', 57.00, 'Hari Nair', 'India', 'Delhi', 'Backend Team', 'SVP-Eng', 'VP-Infra', 'Dir-India', 'Team C', 'Aswin', 210103, 'Deepa M', 210202, 'Billed', 'Architect'),
+
+
+
+-- Insert users with explicit UUIDs and hashed password (password is 'password123' hashed)
+INSERT INTO users (uid, ibs_emp_id, password, roles) VALUES
+-- Employees (200001-200015)
+('dbd70ef8-25d4-48d8-9888-af9f740d4dca', 200001, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('1a9b5c3d-2e8f-4a7b-9c6d-0e1f2a3b4c5d', 200002, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('2b8a6c4e-3d9e-5b8c-7d6e-1f0e9d8c7b6a', 200003, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('3c7b9d5f-4e0f-6c9d-8e7f-2e1d0c9b8a7f', 200004, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('4d6c8e0a-5f1a-7d8e-9f0a-3d2c1b0a9f8e', 200005, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('5e5d7f1b-6a2b-8e9f-0a1b-4e3d2c1b0a9f', 200006, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('6f4e8g2c-7b3c-9f0a-1b2c-5f4e3d2c1b0a', 200007, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('7g3f9h3d-8c4d-0a1b-2c3d-6g5f4e3d2c1b', 200008, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('8h2e0i4e-9d5e-1b2c-3d4e-7h6g5f4e3d2c', 200009, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('9i1f1j5f-0e6f-2c3d-4e5f-8i7h6g5f4e3d', 200010, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('0j0g2k6g-1f7g-3d4e-5f6g-9j8i7h6g5f4e', 200011, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('1k9h3l7h-2g8h-4e5f-6g7h-0k9j8i7h6g5f', 200012, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('2l8i4m8i-3h9i-5f6g-7h8i-1l0k9j8i7h6g', 200013, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('3m7j5n9j-4i0j-6g7h-8i9j-2m1l0k9j8i7h', 200014, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('4n6k6o0k-5j1k-7h8i-9j0k-3n2m1l0k9j8i', 200015, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+
+-- Team Managers (210101-210106)
+('5o5l7p1l-6k2l-8i9j-0k1l-4o3n2m1l0k9j', 210101, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('6p4m8q2m-7l3m-9j0k-1l2m-5p4o3n2m1l0k', 210102, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('7q3n9r3n-8m4n-0k1l-2m3n-6q5p4o3n2m1l', 210103, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('8r2o0s4o-9n5o-1l2m-3n4o-7r6q5p4o3n2m', 210104, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('9s1p1t5p-0o6p-2m3n-4o5p-8s7r6q5p4o3n', 210105, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('0t0q2u6q-1p7q-3n4o-5p6q-9t8s7r6q5p4o', 210106, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+
+-- SDMs (210201-210204)
+('1u9r3v7r-2q8r-4o5p-6q7r-0u9t8s7r6q5p', 210201, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('2v8s4w8s-3r9s-5p6q-7r8s-1v0u9t8s7r6q', 210202, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('3w7t5x9t-4s0t-6q7r-8s9t-2w1v0u9t8s7r', 210203, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+('4x6u6y0u-5t1u-7r8s-9t0u-3x2w1v0u9t8s', 210204, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}'),
+
+-- HR Manager
+('a1b2c3d4-e5f6-7890-1234-5678abcdef12', 999001, '$2a$10$TLu1F.q37L6uMYRn/m9IdOzqVvFIUH55ABUhkVBKuicvgUGb1Ays2', '{employee}');
+
+-- Insert data into employee_info with normalized roles
+INSERT INTO employee_info (
+  ibs_emp_id, user_name, role, email_id, phone_number, location, country, admin_verified
+) VALUES
+-- Employees (200001-200015)
+(200001, 'Ravi Kumar', 'EMPLOYEE', 'ravi.kumar@ibs.com', '9876543210', 'Bangalore', 'India', TRUE),
+(200002, 'Neha Sharma', 'EMPLOYEE', 'neha.sharma@ibs.com', '9876543211', 'Bangalore', 'India', TRUE),
+(200003, 'Amit Roy', 'EMPLOYEE', 'amit.roy@ibs.com', '9876543212', 'Bangalore', 'India', TRUE),
+(200004, 'Divya Nair', 'EMPLOYEE', 'divya.nair@ibs.com', '9876543227', 'Bangalore', 'India', TRUE),
+(200005, 'Sneha Iyer', 'EMPLOYEE', 'sneha.iyer@ibs.com', '9876543221', 'Bangalore', 'India', TRUE),
+(200006, 'Kiran Das', 'EMPLOYEE', 'kiran.das@ibs.com', '9876543222', 'Chennai', 'India', TRUE),
+(200007, 'Meera S', 'EMPLOYEE', 'meera.s@ibs.com', '9876543228', 'Chennai', 'India', TRUE),
+(200008, 'Rajeev Menon', 'EMPLOYEE', 'rajeev.menon@ibs.com', '9876543229', 'Chennai', 'India', TRUE),
+(200009, 'Priya Patel', 'EMPLOYEE', 'priya.patel@ibs.com', '9876543234', 'Chennai', 'India', TRUE),
+(200010, 'Vikram Singh', 'EMPLOYEE', 'vikram.singh@ibs.com', '9876543235', 'Chennai', 'India', TRUE),
+(200011, 'Ananya Gupta', 'EMPLOYEE', 'ananya.gupta@ibs.com', '9876543236', 'Delhi', 'India', TRUE),
+(200012, 'Rahul Verma', 'EMPLOYEE', 'rahul.verma@ibs.com', '9876543237', 'Delhi', 'India', TRUE),
+(200013, 'Shreya Joshi', 'EMPLOYEE', 'shreya.joshi@ibs.com', '9876543238', 'Delhi', 'India', TRUE),
+(200014, 'Aditya Rao', 'EMPLOYEE', 'aditya.rao@ibs.com', '9876543239', 'Delhi', 'India', TRUE),
+(200015, 'Nandini Reddy', 'EMPLOYEE', 'nandini.reddy@ibs.com', '9876543240', 'Delhi', 'India', TRUE),
+
+-- Team Managers (210101-210106)
+(210101, 'Renjith', 'TEAM_MANAGER', 'renjith@ibs.com', '9876543213', 'Bangalore', 'India', TRUE),
+(210102, 'Jasmine', 'TEAM_MANAGER', 'jasmine@ibs.com', '9876543214', 'Chennai', 'India', TRUE),
+(210103, 'Aswin', 'TEAM_MANAGER', 'aswin@ibs.com', '9876543215', 'Delhi', 'India', TRUE),
+(210104, 'Thasniya', 'TEAM_MANAGER', 'thasniya@ibs.com', '9876543216', 'Kochi', 'India', TRUE),
+(210105, 'Rohit', 'TEAM_MANAGER', 'rohit@ibs.com', '9876543223', 'Mumbai', 'India', TRUE),
+(210106, 'Karthik', 'TEAM_MANAGER', 'karthik@ibs.com', '9876543224', 'Hyderabad', 'India', TRUE),
+
+-- SDMs (210201-210204)
+(210201, 'Arun Menon', 'SDM', 'arun.menon@ibs.com', '9876543217', 'Bangalore', 'India', TRUE),
+(210202, 'Deepa M', 'SDM', 'deepa.m@ibs.com', '9876543218', 'Chennai', 'India', TRUE),
+(210203, 'Mohan S', 'SDM', 'mohan.s@ibs.com', '9876543219', 'Delhi', 'India', TRUE),
+(210204, 'Kavitha', 'SDM', 'kavitha@ibs.com', '9876543220', 'Kochi', 'India', TRUE),
+
+-- HR Manager
+(999001, 'Priya Sharma', 'HR_MANAGER', 'priya.sharma@ibs.com', '9876543241', 'Bangalore', 'India', TRUE);
+
+
+
+
+
+
+
+-- Insert approval workflow data
+INSERT INTO approval_workflow (
+  workflow_id, request_id, approver_id, level, status, updated_by, updated_date
+) VALUES
+-- Request 1 (Emp 200001 - Approved by TM but rejected by SDM)
+(1, 1, 210101, 'TEAM_MANAGER', 'APPROVED', 'Renjith', '2025-05-01'),
+(2, 1, 210201, 'SDM', 'REJECTED', 'Arun Menon', '2025-05-02'),
+
+-- Request 2 (Emp 200001 - Pending TM review)
+-- No entries yet
+
+-- Request 3 (Emp 200001 - Rejected by TM)
+(3, 3, 210101, 'TEAM_MANAGER', 'REJECTED', 'Renjith', '2025-05-04'),
+
+-- Request 4 (Emp 200002 - Approved by TM but rejected by SDM)
+(4, 4, 210101, 'TEAM_MANAGER', 'APPROVED', 'Renjith', '2025-05-06'),
+(5, 4, 210201, 'SDM', 'REJECTED', 'Arun Menon', '2025-05-07'),
+
+-- Request 5 (Emp 200002 - Approved by TM, pending SDM)
+(6, 5, 210101, 'TEAM_MANAGER', 'APPROVED', 'Renjith', '2025-05-08'),
+
+-- Request 6 (Emp 200002 - Fully approved by all 3 levels)
+(7, 6, 210101, 'TEAM_MANAGER', 'APPROVED', 'Renjith', '2025-05-09'),
+(8, 6, 210201, 'SDM', 'APPROVED', 'Arun Menon', '2025-05-10'),
+(9, 6, 999001, 'HR_MANAGER', 'APPROVED', 'Priya Sharma', '2025-05-11'),
+
+-- Request 7 (Emp 200002 - Rejected by TM)
+(10, 7, 210101, 'TEAM_MANAGER', 'REJECTED', 'Renjith', '2025-05-12'),
+
+-- Request 8 (Emp 200003 - Rejected by TM)
+(11, 8, 210101, 'TEAM_MANAGER', 'REJECTED', 'Renjith', '2025-05-13'),
+
+-- Request 9 (Emp 200003 - Fully approved by all 3 levels)
+(12, 9, 210101, 'TEAM_MANAGER', 'APPROVED', 'Renjith', '2025-05-14'),
+(13, 9, 210201, 'SDM', 'APPROVED', 'Arun Menon', '2025-05-15'),
+(14, 9, 999001, 'HR_MANAGER', 'APPROVED', 'Priya Sharma', '2025-05-16'),
+
+-- Request 10 (Emp 200004 - Approved by TM but rejected by SDM)
+(15, 10, 210101, 'TEAM_MANAGER', 'APPROVED', 'Renjith', '2025-05-17'),
+(16, 10, 210201, 'SDM', 'REJECTED', 'Arun Menon', '2025-05-18'),
+
+-- Request 11 (Emp 200004 - Approved by TM and SDM but rejected by HR)
+(41, 11, 210101, 'TEAM_MANAGER', 'APPROVED', 'Renjith', '2025-05-20'),
+(42, 11, 210201, 'SDM', 'APPROVED', 'Arun Menon', '2025-05-21'),
+(43, 11, 999001, 'HR_MANAGER', 'REJECTED', 'Priya Sharma', '2025-05-22'),
+
+-- Request 12 (Emp 200005 - Fully approved by all 3 levels)
+(17, 12, 210101, 'TEAM_MANAGER', 'APPROVED', 'Renjith', '2025-05-19'),
+(18, 12, 210201, 'SDM', 'APPROVED', 'Arun Menon', '2025-05-20'),
+(19, 12, 999001, 'HR_MANAGER', 'APPROVED', 'Priya Sharma', '2025-05-21'),
+
+-- Request 13 (Emp 200005 - Approved by TM but rejected by SDM)
+(20, 13, 210101, 'TEAM_MANAGER', 'APPROVED', 'Renjith', '2025-05-22'),
+(21, 13, 210201, 'SDM', 'REJECTED', 'Arun Menon', '2025-05-23'),
+
+-- Request 14 (Emp 200005 - Approved by TM and SDM but rejected by HR)
+(44, 14, 210101, 'TEAM_MANAGER', 'APPROVED', 'Renjith', '2025-05-23'),
+(45, 14, 210201, 'SDM', 'APPROVED', 'Arun Menon', '2025-05-24'),
+(46, 14, 999001, 'HR_MANAGER', 'REJECTED', 'Priya Sharma', '2025-05-25'),
+
+-- Request 16 (Emp 200006 - Fully approved by all 3 levels)
+(22, 16, 210102, 'TEAM_MANAGER', 'APPROVED', 'Jasmine', '2025-05-24'),
+(23, 16, 210201, 'SDM', 'APPROVED', 'Arun Menon', '2025-05-25'),
+(24, 16, 999001, 'HR_MANAGER', 'APPROVED', 'Priya Sharma', '2025-05-26'),
+
+-- Request 17 (Emp 200007 - Approved by TM but rejected by SDM)
+(25, 17, 210102, 'TEAM_MANAGER', 'APPROVED', 'Jasmine', '2025-05-27'),
+(26, 17, 210201, 'SDM', 'REJECTED', 'Arun Menon', '2025-05-28'),
+
+-- Request 18 (Emp 200008 - Fully approved by all 3 levels)
+(27, 18, 210102, 'TEAM_MANAGER', 'APPROVED', 'Jasmine', '2025-05-29'),
+(28, 18, 210201, 'SDM', 'APPROVED', 'Arun Menon', '2025-05-30'),
+(29, 18, 999001, 'HR_MANAGER', 'APPROVED', 'Priya Sharma', '2025-05-31'),
+
+-- Request 20 (Emp 200009 - Fully approved by all 3 levels)
+(30, 20, 210102, 'TEAM_MANAGER', 'APPROVED', 'Jasmine', '2025-06-01'),
+(31, 20, 210201, 'SDM', 'APPROVED', 'Arun Menon', '2025-06-02'),
+(32, 20, 999001, 'HR_MANAGER', 'APPROVED', 'Priya Sharma', '2025-06-03'),
+
+-- Request 22 (Emp 200011 - Approved by TM but rejected by SDM)
+(33, 22, 210103, 'TEAM_MANAGER', 'APPROVED', 'Aswin', '2025-06-04'),
+(34, 22, 210202, 'SDM', 'REJECTED', 'Deepa M', '2025-06-05'),
+
+-- Request 24 (Emp 200012 - Fully approved by all 3 levels)
+(35, 24, 210103, 'TEAM_MANAGER', 'APPROVED', 'Aswin', '2025-06-06'),
+(36, 24, 210202, 'SDM', 'APPROVED', 'Deepa M', '2025-06-07'),
+(37, 24, 999001, 'HR_MANAGER', 'APPROVED', 'Priya Sharma', '2025-06-08'),
+
+-- Request 27 (Emp 200015 - Fully approved by all 3 levels)
+(38, 27, 210103, 'TEAM_MANAGER', 'APPROVED', 'Aswin', '2025-06-09'),
+(39, 27, 210202, 'SDM', 'APPROVED', 'Deepa M', '2025-06-10'),
+(40, 27, 999001, 'HR_MANAGER', 'APPROVED', 'Priya Sharma', '2025-06-11');
+
+
+
+
+
+
+
+
+
+-- Insert WFH requests with statuses reflecting final approval/rejection
+
+
+INSERT INTO wfh_request (
+  request_id, ibs_emp_id, requested_start_date, requested_end_date, employee_reason, 
+  category_of_reason, status, team_owner_id, dm_id, term_duration, priority, 
+  current_location, attachment_path
+) VALUES
+-- Employee 200001 (3 requests)
+(1, 200001, '2025-06-01', '2025-06-03', 'Medical support for family', 'Medical', 'REJECTED', 210101, 210201, '3 Days', 'HIGH', 'Bangalore', NULL), -- Rejected by SDM
+(2, 200001, '2025-07-01', '2025-07-02', 'Medical checkup', 'Medical', 'PENDING', 210101, 210201, '2 Days', 'MODERATE', 'Bangalore', NULL), -- Pending TM review
+(3, 200001, '2025-08-05', '2025-08-06', 'Family visit', 'Personal', 'REJECTED', 210101, 210201, '2 Days', 'LOW', 'Bangalore', NULL), -- Rejected by TM
+ 
+-- Employee 200002 (4 requests)
+(4, 200002, '2025-06-05', '2025-06-06', 'Doctor appointment', 'Medical', 'REJECTED', 210101, 210201, '2 Days', 'MODERATE', 'Bangalore', NULL), -- Rejected by SDM
+(5, 200002, '2025-07-10', '2025-07-10', 'Festival preparation', 'Personal', 'PENDING', 210101, 210201, '1 Day', 'LOW', 'Bangalore', NULL), -- Approved by TM, pending SDM
+(6, 200002, '2025-07-20', '2025-07-21', 'Surgery recovery', 'Medical', 'APPROVED', 210101, 210201, '2 Days', 'HIGH', 'Bangalore', NULL), -- Approved by all
+(7, 200002, '2025-08-15', '2025-08-16', 'Travel issues', 'Personal', 'REJECTED', 210101, 210201, '2 Days', 'LOW', 'Bangalore', NULL), -- Rejected by TM
+ 
+-- Employee 200003 (2 requests)
+(8, 200003, '2025-06-10', '2025-06-10', 'Family emergency', 'Personal', 'REJECTED', 210101, 210201, '1 Day', 'LOW', 'Bangalore', NULL), -- Rejected by TM
+(9, 200003, '2025-07-15', '2025-07-16', 'Urgent personal work', 'Personal', 'APPROVED', 210101, 210201, '2 Days', 'HIGH', 'Bangalore', NULL), -- Approved by all
+ 
+-- Employee 200004 (2 requests)
+(10, 200004, '2025-06-07', '2025-06-08', 'Family event', 'Personal', 'REJECTED', 210101, 210201, '2 Days', 'HIGH', 'Bangalore', NULL), -- Rejected by SDM
+(11, 200004, '2025-09-01', '2025-09-01', 'Cultural event', 'Other', 'REJECTED', 210101, 210201, '1 Day', 'LOW', 'Bangalore', NULL), -- Rejected by HR
+ 
+-- Employee 200005 (3 requests)
+(12, 200005, '2025-06-11', '2025-06-13', 'Parent medical care', 'Medical', 'APPROVED', 210101, 210201, '3 Days', 'HIGH', 'Bangalore', NULL), -- Approved by all
+(13, 200005, '2025-07-20', '2025-07-21', 'Outstation travel', 'Personal', 'REJECTED', 210101, 210201, '2 Days', 'MODERATE', 'Bangalore', NULL), -- Rejected by SDM
+(14, 200005, '2025-08-25', '2025-08-26', 'Extended family visit', 'Personal', 'REJECTED', 210101, 210201, '2 Days', 'LOW', 'Bangalore', NULL), -- Rejected by HR
+ 
+-- Employee 200006 (2 requests)
+(15, 200006, '2025-06-15', '2025-06-16', 'Personal commitments', 'Personal', 'PENDING', 210102, 210201, '2 Days', 'MODERATE', 'Chennai', NULL), -- Pending TM review
+(16, 200006, '2025-08-01', '2025-08-02', 'Medical rest', 'Medical', 'APPROVED', 210102, 210201, '2 Days', 'HIGH', 'Chennai', NULL), -- Approved by all
+ 
+-- Employee 200007 (1 request)
+(17, 200007, '2025-07-05', '2025-07-07', 'Home renovation', 'Personal', 'REJECTED', 210102, 210201, '3 Days', 'MODERATE', 'Chennai', NULL), -- Rejected by SDM
+ 
+-- Employee 200008 (2 requests)
+(18, 200008, '2025-07-12', '2025-07-13', 'Health check', 'Medical', 'APPROVED', 210102, 210201, '2 Days', 'HIGH', 'Chennai', NULL), -- Approved by all
+(19, 200008, '2025-08-15', '2025-08-16', 'Local travel', 'Other', 'PENDING', 210102, 210201, '2 Days', 'MODERATE', 'Chennai', NULL), -- Pending TM review
+ 
+-- Employee 200009 (1 request)
+(20, 200009, '2025-06-20', '2025-06-21', 'Wedding ceremony', 'Personal', 'APPROVED', 210102, 210201, '2 Days', 'HIGH', 'Chennai', NULL), -- Approved by all
+ 
+-- Employee 200010 (1 request)
+(21, 200010, '2025-07-25', '2025-07-26', 'Family reunion', 'Personal', 'PENDING', 210102, 210201, '2 Days', 'MODERATE', 'Chennai', NULL), -- Pending TM review
+ 
+-- Employee 200011 (2 requests)
+(22, 200011, '2025-06-18', '2025-06-19', 'Medical procedure', 'Medical', 'REJECTED', 210103, 210202, '2 Days', 'HIGH', 'Delhi', NULL), -- Rejected by SDM
+(23, 200011, '2025-08-10', '2025-08-11', 'Personal work', 'Personal', 'PENDING', 210103, 210202, '2 Days', 'MODERATE', 'Delhi', NULL), -- Pending TM review
+ 
+-- Employee 200012 (1 request)
+(24, 200012, '2025-07-08', '2025-07-09', 'House shifting', 'Personal', 'APPROVED', 210103, 210202, '2 Days', 'HIGH', 'Delhi', NULL), -- Approved by all
+ 
+-- Employee 200013 (1 request)
+(25, 200013, '2025-06-25', '2025-06-26', 'Family function', 'Personal', 'REJECTED', 210103, 210202, '2 Days', 'LOW', 'Delhi', NULL), -- Rejected by TM
+ 
+-- Employee 200014 (1 request)
+(26, 200014, '2025-07-30', '2025-07-31', 'Medical appointment', 'Medical', 'PENDING', 210103, 210202, '2 Days', 'HIGH', 'Delhi', NULL), -- Pending TM review
+ 
+-- Employee 200015 (2 requests)
+(27, 200015, '2025-06-22', '2025-06-23', 'Parent care', 'Medical', 'APPROVED', 210103, 210202, '2 Days', 'HIGH', 'Delhi', NULL), -- Approved by all
+(28, 200015, '2025-08-18', '2025-08-19', 'Vacation extension', 'Personal', 'PENDING', 210103, 210202, '2 Days', 'MODERATE', 'Delhi', NULL); -- Pending TM review
+
+
+
+
+
+
+
+-- =============================================
+-- Sample Application Queries
+-- =============================================
+
+-- Get all pending requests for a team manager (e.g., Renjith - 210101)
+SELECT r.request_id, r.ibs_emp_id, e.expediafgname as employee_name,
+       r.requested_start_date, r.requested_end_date, r.term_duration,
+       r.employee_reason, r.category_of_reason, r.priority
+FROM wfh_request r
+JOIN employee_master e ON r.ibs_emp_id = e.ibs_emp_id
+WHERE r.team_owner_id = 210101 
+  AND r.status = 'PENDING'
+  AND NOT EXISTS (
+    SELECT 1 FROM approval_workflow aw 
+    WHERE aw.request_id = r.request_id 
+    AND aw.level = 'TEAM_MANAGER'
+  )
+ORDER BY r.requested_start_date;
+
+-- Get approval history for a specific request (e.g., request_id = 6)
+SELECT aw.workflow_id, aw.level, 
+       CASE 
+         WHEN aw.level = 'TEAM_MANAGER' THEN tm.expediafgname
+         WHEN aw.level = 'SDM' THEN sdm.expediafgname
+         WHEN aw.level = 'HR_MANAGER' THEN hr.expediafgname
+       END as approver_name,
+       aw.status, aw.updated_by, aw.updated_date
+FROM approval_workflow aw
+LEFT JOIN employee_master tm ON aw.approver_id = tm.ibs_emp_id AND aw.level = 'TEAM_MANAGER'
+LEFT JOIN employee_master sdm ON aw.approver_id = sdm.ibs_emp_id AND aw.level = 'SDM'
+LEFT JOIN employee_master hr ON aw.approver_id = hr.ibs_emp_id AND aw.level = 'HR_MANAGER'
+WHERE aw.request_id = 6
+ORDER BY aw.workflow_id;
+
+-- Get all approved requests for an employee (e.g., employee 200002)
+SELECT r.request_id, r.requested_start_date, r.requested_end_date, 
+       r.term_duration, r.employee_reason, r.status,
+       STRING_AGG(aw.level || ':' || aw.status, ', ' ORDER BY aw.workflow_id) as approvals
+FROM wfh_request r
+LEFT JOIN approval_workflow aw ON r.request_id = aw.request_id
+WHERE r.ibs_emp_id = 200002 AND r.status = 'APPROVED'
+GROUP BY r.request_id, r.requested_start_date, r.requested_end_date, 
+         r.term_duration, r.employee_reason, r.status;
+
+
+
+
+-- =============================================
+-- To Check the logic
+-- =============================================
+
+SELECT r.request_id, r.ibs_emp_id, r.status, 
+       COUNT(CASE WHEN aw.level = 'TEAM_MANAGER' AND aw.status = 'APPROVED' THEN 1 END) as tm_approved,
+       COUNT(CASE WHEN aw.level = 'SDM' AND aw.status = 'APPROVED' THEN 1 END) as sdm_approved,
+       COUNT(CASE WHEN aw.level = 'HR_MANAGER' AND aw.status = 'APPROVED' THEN 1 END) as hr_approved
+FROM wfh_request r
+JOIN approval_workflow aw ON r.request_id = aw.request_id
+WHERE r.status = 'APPROVED'
+GROUP BY r.request_id, r.ibs_emp_id, r.status
+HAVING COUNT(CASE WHEN aw.level = 'TEAM_MANAGER' AND aw.status = 'APPROVED' THEN 1 END) = 0
+   OR COUNT(CASE WHEN aw.level = 'SDM' AND aw.status = 'APPROVED' THEN 1 END) = 0
+   OR COUNT(CASE WHEN aw.level = 'HR_MANAGER' AND aw.status = 'APPROVED' THEN 1 END) = 0;
+
+
+SELECT r.request_id, r.ibs_emp_id, r.status, 
+       STRING_AGG(aw.level || ':' || aw.status, ', ') as workflow_statuses
+FROM wfh_request r
+JOIN approval_workflow aw ON r.request_id = aw.request_id
+WHERE r.status = 'REJECTED'
+GROUP BY r.request_id, r.ibs_emp_id, r.status
+HAVING NOT BOOL_OR(aw.status = 'REJECTED');
+
+
+
+SELECT r.request_id, r.ibs_emp_id, r.status, 
+       STRING_AGG(aw.level || ':' || aw.status, ', ') as workflow_statuses
+FROM wfh_request r
+LEFT JOIN approval_workflow aw ON r.request_id = aw.request_id
+WHERE r.status = 'PENDING'
+GROUP BY r.request_id, r.ibs_emp_id, r.status
+HAVING COUNT(CASE WHEN aw.level = 'TEAM_MANAGER' AND aw.status = 'APPROVED' THEN 1 END) > 0
+   AND COUNT(CASE WHEN aw.level = 'SDM' AND aw.status = 'APPROVED' THEN 1 END) > 0
+   AND COUNT(CASE WHEN aw.level = 'HR_MANAGER' AND aw.status = 'APPROVED' THEN 1 END) > 0;
