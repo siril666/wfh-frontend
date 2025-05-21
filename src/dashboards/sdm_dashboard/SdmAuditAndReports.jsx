@@ -47,6 +47,7 @@ const SdmAuditAndReports = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState(""); // New status filter state
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
   useEffect(() => {
@@ -81,7 +82,7 @@ const SdmAuditAndReports = () => {
 
   // Filter requests based on filters
   const filteredRequests = requests.filter(
-    ({ employeeName, request, teamOwnerName }) => {
+    ({ employeeName, request, teamOwnerName, sdmStatus }) => {
       // Search term filter
       const matchesSearch =
         employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -89,23 +90,30 @@ const SdmAuditAndReports = () => {
 
       // Date filter
       const requestDate = new Date(request.requestedStartDate);
+      requestDate.setHours(0, 0, 0, 0); // Normalize to start of day
+      
       let matchesDate = true;
 
       if (dateFilter === "week") {
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        oneWeekAgo.setHours(0, 0, 0, 0); // Normalize to start of day
         matchesDate = requestDate >= oneWeekAgo;
       } else if (dateFilter === "month") {
         const oneMonthAgo = new Date();
         oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        oneMonthAgo.setHours(0, 0, 0, 0); // Normalize to start of day
         matchesDate = requestDate >= oneMonthAgo;
       } else if (dateFilter === "quarter") {
         const threeMonthsAgo = new Date();
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        threeMonthsAgo.setHours(0, 0, 0, 0); // Normalize to start of day
         matchesDate = requestDate >= threeMonthsAgo;
       } else if (dateFilter === "custom" && startDate && endDate) {
         const start = new Date(startDate);
         const end = new Date(endDate);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999); // Include entire end date
         matchesDate = requestDate >= start && requestDate <= end;
       }
 
@@ -114,7 +122,12 @@ const SdmAuditAndReports = () => {
         ? teamOwnerName.toLowerCase().includes(teamFilter.toLowerCase())
         : true;
 
-      return matchesSearch && matchesDate && matchesTeam;
+      // Status filter
+      const matchesStatus = statusFilter
+        ? sdmStatus === statusFilter
+        : true;
+
+      return matchesSearch && matchesDate && matchesTeam && matchesStatus;
     }
   );
 
@@ -284,7 +297,7 @@ const SdmAuditAndReports = () => {
               <input
                 type="text"
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Search by name, ID, or reason..."
+                placeholder="Search by name, ID, or category..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -305,6 +318,31 @@ const SdmAuditAndReports = () => {
                     {team}
                   </option>
                 ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path d="M7 7l3-3 3 3m0 6l-3 3-3-3" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Status Filter */}
+          <div className="w-full sm:w-48">
+            <div className="relative w-full">
+              <select
+                className="appearance-none w-full border border-gray-300 rounded-md px-3 py-2 pr-10 bg-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="">All Statuses</option>
+                <option value="APPROVED">Approved</option>
+                <option value="PENDING">Pending</option>
+                <option value="REJECTED">Rejected</option>
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
                 <svg
@@ -397,7 +435,7 @@ const SdmAuditAndReports = () => {
               >
                 <option value="monthly">By Month</option>
                 <option value="team">By Team</option>
-                <option value="reason">By Reason</option>
+                <option value="reason">By Category</option>
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
                 <svg
