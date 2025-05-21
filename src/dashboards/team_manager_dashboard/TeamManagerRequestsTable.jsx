@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
 const statusStyles = {
   APPROVED: "bg-green-100 text-green-800",
@@ -24,7 +24,33 @@ const priorityLabels = {
   LOW: "Low"
 };
 
+// Priority order for sorting
+const priorityOrder = {
+  HIGH: 1,
+  MODERATE: 2,
+  LOW: 3
+};
+
 const TeamManagerRequestsTable = ({ requests, navigate }) => {
+  const [sortedRequests, setSortedRequests] = useState([]);
+  const [sortByPriority, setSortByPriority] = useState(false);
+
+  useEffect(() => {
+    let sorted = [...requests];
+    if (sortByPriority) {
+      sorted.sort((a, b) => {
+        const prioA = priorityOrder[a.request.priority || "LOW"];
+        const prioB = priorityOrder[b.request.priority || "LOW"];
+        return prioA - prioB;
+      });
+    }
+    setSortedRequests(sorted);
+  }, [requests, sortByPriority]);
+
+  const togglePrioritySort = () => {
+    setSortByPriority(prev => !prev);
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
@@ -37,13 +63,23 @@ const TeamManagerRequestsTable = ({ requests, navigate }) => {
               Dates
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
-              Reason
+              Category
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6 flex items-center gap-2">
+              Priority
+              <button
+                onClick={togglePrioritySort}
+                className="text-gray-500 hover:text-gray-800"
+                title="Sort by Priority"
+              >
+                {sortByPriority ? "⬆️" : "⬇️"}
+              </button>
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
               TM Status
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
-              HR Status
+              SDM Status
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
               Actions
@@ -51,8 +87,8 @@ const TeamManagerRequestsTable = ({ requests, navigate }) => {
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {requests.length > 0 ? (
-            requests.map((request) => (
+          {sortedRequests.length > 0 ? (
+            sortedRequests.map((request) => (
               <tr key={request.request.requestId} className="hover:bg-gray-50">
                 <td className="px-6 py-4">
                   <div className="text-sm font-medium text-gray-900">
@@ -64,7 +100,7 @@ const TeamManagerRequestsTable = ({ requests, navigate }) => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
-                    {new Date(request.request.requestedStartDate).toLocaleDateString()} - {' '}
+                    {new Date(request.request.requestedStartDate).toLocaleDateString()} -{" "}
                     {new Date(request.request.requestedEndDate).toLocaleDateString()}
                   </div>
                   <div className="text-sm text-gray-500">
@@ -80,9 +116,20 @@ const TeamManagerRequestsTable = ({ requests, navigate }) => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    statusStyles[request.tmStatus || "PENDING"]
-                  }`}>
+                  <span
+                    className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      priorityStyles[request.request.priority || "LOW"]
+                    }`}
+                  >
+                    {priorityLabels[request.request.priority || "LOW"]}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      statusStyles[request.tmStatus || "PENDING"]
+                    }`}
+                  >
                     {statusLabels[request.tmStatus || "PENDING"]}
                   </span>
                   {request.tmActionDate && (
@@ -94,9 +141,11 @@ const TeamManagerRequestsTable = ({ requests, navigate }) => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   {request.sdmStatus ? (
                     <>
-                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        statusStyles[request.sdmStatus]
-                      }`}>
+                      <span
+                        className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          statusStyles[request.sdmStatus]
+                        }`}
+                      >
                         {statusLabels[request.sdmStatus]}
                       </span>
                       {request.sdmActionDate && (
@@ -111,25 +160,22 @@ const TeamManagerRequestsTable = ({ requests, navigate }) => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
-                    onClick={() => navigate(`/tm-dashboard/request-details/${request.request.requestId}`)}
+                    onClick={() =>
+                      navigate(`/tm-dashboard/request-details/${request.request.requestId}`)
+                    }
                     className="text-indigo-600 hover:text-indigo-900 mr-4"
                   >
                     View
                   </button>
-                  {/* {request.request.status === "PENDING" && (
-                    <button
-                      onClick={() => navigate(`/tm-dashboard/request-details/${request.request.requestId}`)}
-                      className="text-green-600 hover:text-green-900"
-                    >
-                      Approve/Reject
-                    </button>
-                  )} */}
                 </td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
+              <td
+                colSpan="7"
+                className="px-6 py-4 text-center text-sm text-gray-500"
+              >
                 No requests found
               </td>
             </tr>
