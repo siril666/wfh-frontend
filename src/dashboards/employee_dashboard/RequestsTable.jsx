@@ -106,7 +106,7 @@ const RequestsTable = ({ requests, navigate }) => {
           <input
             type="text"
             className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            placeholder="Search by reason, status, or priority..."
+            placeholder="Search by category, status, or priority..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -121,7 +121,7 @@ const RequestsTable = ({ requests, navigate }) => {
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5 cursor-pointer"
                 onClick={() => requestSort("categoryOfReason")}
               >
-                Reason {getSortIndicator("categoryOfReason")}
+                Category {getSortIndicator("categoryOfReason")}
               </th>
               <th 
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6 cursor-pointer"
