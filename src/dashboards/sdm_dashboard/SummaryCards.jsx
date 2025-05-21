@@ -53,7 +53,7 @@ const SummaryCards = ({
         <button
           key={card.status}
           onClick={() => onFilter(card.status)}
-          className={`bg-white p-6 rounded-xl shadow-sm border-b-4 ${card.borderColor} cursor-pointer transition-all duration-200
+          className={`p-6 rounded-xl shadow-sm border-b-4 ${card.borderColor} cursor-pointer transition-all duration-200
             ${activeFilter === card.status 
               ? `${card.activeBg} transform scale-[1.02] shadow-md` 
               : 'hover:shadow-md'}

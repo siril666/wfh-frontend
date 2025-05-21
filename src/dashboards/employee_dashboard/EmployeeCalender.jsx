@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   format,
@@ -13,9 +14,9 @@ import {
 import { getCalendarForEmployee } from '../../api/apiService';
 
 const statusStyles = {
-  APPROVED: 'bg-green-100 text-green-800 border-l-4 border-green-500',
-  PENDING: 'bg-orange-100 text-orange-800 border-l-4 border-orange-500',
-  REJECTED: 'bg-red-100 text-red-800 border-l-4 border-red-500',
+  APPROVED: 'bg-green-100 text-green-800 border-l-4',
+  PENDING: 'bg-orange-100 text-orange-800 border-l-4',
+  REJECTED: 'bg-red-100 text-red-800 border-l-4 ',
   DEFAULT: 'bg-gray-50 text-gray-600'
 };
 
@@ -23,6 +24,7 @@ function EmployeeCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [wfhData, setWfhData] = useState({});
   const [loading, setLoading] = useState(true);
+  const [selectedDateDetails, setSelectedDateDetails] = useState(null); // 🆕 for selected date details
 
   useEffect(() => {
     setLoading(true);
@@ -33,6 +35,7 @@ function EmployeeCalendar() {
           dataMap[entry.date] = entry;
         });
         setWfhData(dataMap);
+        setSelectedDateDetails(null); // Clear selection when month changes
       })
       .catch(err => {
         console.error("Failed to fetch calendar data", err);
@@ -44,12 +47,20 @@ function EmployeeCalendar() {
   const monthEnd = endOfMonth(currentMonth);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  // Create calendar grid with empty slots for days before month start
   const startDay = getDay(monthStart);
   const calendarDays = [
     ...Array.from({ length: startDay }, () => null),
     ...monthDays
   ];
+
+  const handleDateClick = (date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    if (wfhData[dateStr]) {
+      setSelectedDateDetails({ date: dateStr, ...wfhData[dateStr] });
+    } else {
+      setSelectedDateDetails(null);
+    }
+  };
 
   const renderDayCell = (date, index) => {
     if (!date) {
@@ -62,14 +73,14 @@ function EmployeeCalendar() {
     const isWeekend = getDay(date) === 0 || getDay(date) === 6;
 
     const dayClasses = [
-      'h-24 p-2 border border-gray-100 flex flex-col',
+      'h-24 p-2 border border-gray-100 flex flex-col cursor-pointer',
       isCurrentDay ? 'bg-indigo-50' : '',
       isWeekend && !entry ? 'bg-blue-50' : '',
       entry ? statusStyles[entry.status] : statusStyles.DEFAULT
     ].join(' ');
 
     return (
-      <div key={dateStr} className={dayClasses}>
+      <div key={dateStr} className={dayClasses} onClick={() => handleDateClick(date)}>
         <div className={`text-sm font-medium ${
           isCurrentDay ? 'text-indigo-600' : 'text-gray-700'
         }`}>
@@ -168,6 +179,36 @@ function EmployeeCalendar() {
             <span className="text-xs text-gray-600">Rejected</span>
           </div>
         </div>
+
+        {/* Selected Date Details */}
+        {selectedDateDetails && (
+          <div className="px-6 pb-6">
+            <div className="mt-4 border-t border-gray-100 pt-4 space-y-2">
+              <div className="text-sm p-3 bg-gray-50 rounded-lg grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                  <div className="text-xs text-gray-500">Date</div>
+                  <div className="font-medium">{selectedDateDetails.date}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500">Status</div>
+                  <div className="font-medium">{selectedDateDetails.status}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500">Reason</div>
+                  <div className="truncate">{selectedDateDetails.reason}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500">Priority</div>
+                  <div className="font-medium">{selectedDateDetails.priorityLevel}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500">Category</div>
+                  <div className="font-medium">{selectedDateDetails.categoryOfReason}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

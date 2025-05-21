@@ -12,10 +12,10 @@ import {
 import { getSdmCalendar, getSdmDateDetails } from "../../api/apiService";
 
 const statusStyles = {
-  APPROVED: "bg-green-100 text-green-800 border-l-4 border-green-500",
-  PENDING: "bg-orange-100 text-orange-800 border-l-4 border-orange-500",
-  REJECTED: "bg-red-100 text-red-800 border-l-4 border-red-500",
-  PENDING_HR: "bg-blue-100 text-blue-800 border-l-4 border-blue-500",
+  APPROVED: "bg-green-100 text-green-800 border-l-4 ",
+  PENDING: "bg-orange-100 text-orange-800 border-l-4 ",
+  REJECTED: "bg-red-100 text-red-800 border-l-4 ",
+  PENDING_HR: "bg-blue-100 text-blue-800 border-l-4 ",
   DEFAULT: "bg-gray-50 text-gray-600",
 };
 

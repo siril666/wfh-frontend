@@ -38,7 +38,7 @@ const SummaryCards = ({ total, approved, pending, rejected, onFilter, activeFilt
         <div 
           key={card.status}
           onClick={() => onFilter(card.status)}
-          className={`bg-white p-6 rounded-xl shadow-sm border-b-4 ${card.borderColor} cursor-pointer transition-all ${
+          className={` p-6 rounded-xl shadow-sm border-b-4 ${card.borderColor} cursor-pointer transition-all ${
             activeFilter === card.status ? card.activeBg + ' transform scale-[1.02] shadow-md' : 'hover:shadow-md'
           }`}
         >

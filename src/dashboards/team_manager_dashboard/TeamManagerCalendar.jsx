@@ -73,7 +73,7 @@ const TeamManagerCalendar = () => {
       isCurrentDay ? "bg-indigo-50" : "",
       isWeekend ? "bg-blue-50" : "",
       hasData
-        ? "bg-green-100 text-green-800 border-l-4 border-green-500"
+        ? "bg-green-100 text-green-800 border-l-4 "
         : "bg-gray-50",
     ].join(" ");
 
@@ -163,15 +163,15 @@ const TeamManagerCalendar = () => {
         {/* Legend */}
         <div className="p-4 border-t border-gray-100 flex flex-wrap gap-4">
           <div className="flex items-center">
-            <div className="w-3 h-3 rounded-full bg-indigo-50 border border-indigo-200 mr-2"></div>
+            <div className="w-3 h-3 rounded-full bg-indigo-50 border  mr-2"></div>
             <span className="text-xs text-gray-600">Today</span>
           </div>
           <div className="flex items-center">
-            <div className="w-3 h-3 rounded-full bg-blue-50 border border-blue-200 mr-2"></div>
+            <div className="w-3 h-3 rounded-full bg-blue-50 border mr-2"></div>
             <span className="text-xs text-gray-600">Weekend</span>
           </div>
           <div className="flex items-center">
-            <div className="w-3 h-3 rounded-full bg-green-100 border-l-4 border-green-500 mr-2"></div>
+            <div className="w-3 h-3 rounded-full bg-green-100 border-l-4 mr-2"></div>
             <span className="text-xs text-gray-600">WFH Approved</span>
           </div>
         </div>
