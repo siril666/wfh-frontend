@@ -37,6 +37,13 @@ const priorityLabels = {
   LOW: "Low",
 };
 
+// Priority order for sorting
+const priorityOrder = {
+  HIGH: 1,
+  MODERATE: 2,
+  LOW: 3
+};
+
 const TeamManagerAuditAndReports = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +87,8 @@ const TeamManagerAuditAndReports = () => {
   const filteredRequests = requests.filter(({ employeeName, request }) => {
     const matchesSearch =
       employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.ibsEmpId.toString().includes(searchTerm);
+      request.ibsEmpId.toString().includes(searchTerm) ||
+      request.categoryOfReason.toLowerCase().includes(searchTerm.toLowerCase());
 
     const requestDate = new Date(request.requestedStartDate);
     let matchesDate = true;
@@ -118,6 +126,25 @@ const TeamManagerAuditAndReports = () => {
       valueB = valueB[part];
     }
 
+    // Special handling for priority sorting
+    if (sortConfig.key === "request.priority") {
+      const priorityA = priorityOrder[valueA];
+      const priorityB = priorityOrder[valueB];
+      return sortConfig.direction === "asc" 
+        ? priorityA - priorityB 
+        : priorityB - priorityA;
+    }
+
+    // Special handling for date sorting
+    if (sortConfig.key === "request.requestedStartDate") {
+      const dateA = new Date(valueA);
+      const dateB = new Date(valueB);
+      return sortConfig.direction === "asc" 
+        ? dateA - dateB 
+        : dateB - dateA;
+    }
+
+    // Default string/number comparison
     if (valueA < valueB) {
       return sortConfig.direction === "asc" ? -1 : 1;
     }
@@ -251,7 +278,7 @@ const TeamManagerAuditAndReports = () => {
               <input
                 type="text"
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Search by name, ID, or reason..."
+                placeholder="Search by name, ID, or category..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -364,7 +391,7 @@ const TeamManagerAuditAndReports = () => {
                     Dates {getSortIndicator("request.requestedStartDate")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Reason
+                    Category
                   </th>
                   <th
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
@@ -494,7 +521,7 @@ const TeamManagerAuditAndReports = () => {
         <div className="bg-white rounded-lg shadow-sm p-4">
           <h2 className="text-lg font-medium mb-4">
             {graphType === "monthly" && "Monthly WFH Requests"}
-            {graphType === "reason" && "WFH Requests by Reason"}
+            {graphType === "reason" && "WFH Requests by Category"}
             {graphType === "priority" && "WFH Requests by Priority"}
           </h2>
           <div className="h-96">
@@ -521,5 +548,3 @@ const TeamManagerAuditAndReports = () => {
 };
 
 export default TeamManagerAuditAndReports;
-
-

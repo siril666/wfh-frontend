@@ -24,7 +24,6 @@ const priorityLabels = {
   LOW: "Low"
 };
 
-// Priority order for sorting
 const priorityOrder = {
   HIGH: 1,
   MODERATE: 2,
@@ -34,9 +33,19 @@ const priorityOrder = {
 const TeamManagerRequestsTable = ({ requests, navigate }) => {
   const [sortedRequests, setSortedRequests] = useState([]);
   const [sortByPriority, setSortByPriority] = useState(false);
+  const [sortByDateAsc, setSortByDateAsc] = useState(true);
 
   useEffect(() => {
     let sorted = [...requests];
+
+    // First sort by date
+    sorted.sort((a, b) => {
+      const dateA = new Date(a.request.requestedStartDate);
+      const dateB = new Date(b.request.requestedStartDate);
+      return sortByDateAsc ? dateA - dateB : dateB - dateA;
+    });
+
+    // Then sort by priority if selected
     if (sortByPriority) {
       sorted.sort((a, b) => {
         const prioA = priorityOrder[a.request.priority || "LOW"];
@@ -44,12 +53,12 @@ const TeamManagerRequestsTable = ({ requests, navigate }) => {
         return prioA - prioB;
       });
     }
-    setSortedRequests(sorted);
-  }, [requests, sortByPriority]);
 
-  const togglePrioritySort = () => {
-    setSortByPriority(prev => !prev);
-  };
+    setSortedRequests(sorted);
+  }, [requests, sortByPriority, sortByDateAsc]);
+
+  const togglePrioritySort = () => setSortByPriority(prev => !prev);
+  const toggleDateSort = () => setSortByDateAsc(prev => !prev);
 
   return (
     <div className="overflow-x-auto">
@@ -60,20 +69,31 @@ const TeamManagerRequestsTable = ({ requests, navigate }) => {
               Employee
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
-              Dates
+              <div className="flex items-center gap-2">
+                Dates
+                <button
+                  onClick={toggleDateSort}
+                  className="text-gray-500 hover:text-gray-800"
+                  title="Sort by Date"
+                >
+                  {sortByDateAsc ? "⬆️" : "⬇️"}
+                </button>
+              </div>
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
               Category
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6 flex items-center gap-2">
-              Priority
-              <button
-                onClick={togglePrioritySort}
-                className="text-gray-500 hover:text-gray-800"
-                title="Sort by Priority"
-              >
-                {sortByPriority ? "⬆️" : "⬇️"}
-              </button>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+              <div className="flex items-center gap-2">
+                Priority
+                <button
+                  onClick={togglePrioritySort}
+                  className="text-gray-500 hover:text-gray-800"
+                  title="Sort by Priority"
+                >
+                  {sortByPriority ? "⬆️" : "⬇️"}
+                </button>
+              </div>
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
               TM Status
@@ -172,10 +192,7 @@ const TeamManagerRequestsTable = ({ requests, navigate }) => {
             ))
           ) : (
             <tr>
-              <td
-                colSpan="7"
-                className="px-6 py-4 text-center text-sm text-gray-500"
-              >
+              <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500">
                 No requests found
               </td>
             </tr>

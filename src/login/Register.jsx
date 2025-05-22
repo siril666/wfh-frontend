@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { userRegister } from "../api/apiService";
 
@@ -18,43 +18,64 @@ const RegisterPage = () => {
   const [errors, setErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const validateForm = () => {
-    const newErrors = {};
+  const validateField = (name, value) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^[0-9]{10,15}$/;
+    const phoneRegex = /^[0-9]{10}$/;
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
 
-    if (!formData.ibsEmpId || isNaN(formData.ibsEmpId)) {
-      newErrors.ibsEmpId = "Valid Employee ID is required";
+    switch (name) {
+      case "ibsEmpId":
+        if (!value || !/^[0-9]{6}$/.test(value)) {
+          return "6-digit Employee ID is required";
+        }
+        break;
+      case "userName":
+        if (!value.trim()) {
+          return "Username is required";
+        }
+        break;
+      case "role":
+        if (!value) {
+          return "Role is required";
+        }
+        break;
+      case "emailId":
+        if (!value || !emailRegex.test(value)) {
+          return "Valid email is required";
+        }
+        break;
+      case "phoneNumber":
+        if (!value || !phoneRegex.test(value)) {
+          return "10-digit phone number is required";
+        }
+        break;
+      case "location":
+        if (!value.trim()) {
+          return "Location is required";
+        }
+        break;
+      case "country":
+        if (!value.trim()) {
+          return "Country is required";
+        }
+        break;
+      case "password":
+        if (!value || !passwordRegex.test(value)) {
+          return "Password must be at least 8 characters with letters and numbers";
+        }
+        break;
+      case "confirmPassword":
+        if (value !== formData.password) {
+          return "Passwords must match";
+        }
+        break;
+      default:
+        return "";
     }
-    if (!formData.userName.trim()) {
-      newErrors.userName = "Username is required";
-    }
-    if (!formData.role) {
-      newErrors.role = "Role is required";
-    }
-    if (!formData.emailId || !emailRegex.test(formData.emailId)) {
-      newErrors.emailId = "Valid email is required";
-    }
-    if (!formData.phoneNumber || !phoneRegex.test(formData.phoneNumber)) {
-      newErrors.phoneNumber = "Valid phone number is required";
-    }
-    if (!formData.location.trim()) {
-      newErrors.location = "Location is required";
-    }
-    if (!formData.country.trim()) {
-      newErrors.country = "Country is required";
-    }
-    if (!formData.password || !passwordRegex.test(formData.password)) {
-      newErrors.password = "Password must be at least 8 characters with letters and numbers";
-    }
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords must match";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return "";
   };
 
   const handleChange = (e) => {
@@ -63,14 +84,25 @@ const RegisterPage = () => {
       ...prev,
       [name]: value,
     }));
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
-    }
+
+    // Validate field immediately
+    const error = validateField(name, value);
+    setErrors((prev) => ({
+      ...prev,
+      [name]: error,
+    }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    Object.keys(formData).forEach((field) => {
+      const error = validateField(field, formData[field]);
+      if (error) {
+        newErrors[field] = error;
+      }
+    });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleRegister = async (e) => {
@@ -99,7 +131,6 @@ const RegisterPage = () => {
     try {
       const response = await userRegister(payload);
       setSuccessMsg(response.data || "Registration successful! Awaiting admin approval.");
-      // Clear form on successful registration
       setFormData({
         ibsEmpId: "",
         userName: "",
@@ -155,7 +186,8 @@ const RegisterPage = () => {
                 placeholder="Employee ID"
                 className={`w-full px-4 py-3 text-sm border-b ${
                   errors.ibsEmpId ? "border-red-500" : "border-gray-300"
-                } focus:border-indigo-500 focus:outline-none`}
+                } focus:border-indigo-500 focus:outline-none appearance-none`}
+                onWheel={(e) => e.target.blur()} // Prevent number input scroll
               />
               {errors.ibsEmpId && (
                 <p className="mt-1 text-xs text-red-500">{errors.ibsEmpId}</p>
@@ -173,6 +205,7 @@ const RegisterPage = () => {
                 className={`w-full px-4 py-3 text-sm border-b ${
                   errors.userName ? "border-red-500" : "border-gray-300"
                 } focus:border-indigo-500 focus:outline-none`}
+                
               />
               {errors.userName && (
                 <p className="mt-1 text-xs text-red-500">{errors.userName}</p>
@@ -271,9 +304,9 @@ const RegisterPage = () => {
             </div>
           </div>
 
-          <div>
+          <div className="relative">
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               name="password"
               value={formData.password}
               onChange={handleChange}
@@ -283,14 +316,31 @@ const RegisterPage = () => {
                 errors.password ? "border-red-500" : "border-gray-300"
               } focus:border-indigo-500 focus:outline-none`}
             />
+            <button
+              type="button"
+              className="absolute right-3 top-3.5 text-gray-500 hover:text-gray-700"
+              onClick={() => setShowPassword(!showPassword)}
+              disabled={!formData.password}
+            >
+              {showPassword ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                </svg>
+              )}
+            </button>
             {errors.password && (
               <p className="mt-1 text-xs text-red-500">{errors.password}</p>
             )}
           </div>
 
-          <div>
+          <div className="relative">
             <input
-              type="password"
+              type={showConfirmPassword ? "text" : "password"}
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
@@ -300,6 +350,23 @@ const RegisterPage = () => {
                 errors.confirmPassword ? "border-red-500" : "border-gray-300"
               } focus:border-indigo-500 focus:outline-none`}
             />
+            <button
+              type="button"
+              className="absolute right-3 top-3.5 text-gray-500 hover:text-gray-700"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              disabled={!formData.confirmPassword}
+            >
+              {showConfirmPassword ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                </svg>
+              )}
+            </button>
             {errors.confirmPassword && (
               <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>
             )}
@@ -357,3 +424,6 @@ const RegisterPage = () => {
 };
 
 export default RegisterPage;
+
+
+
