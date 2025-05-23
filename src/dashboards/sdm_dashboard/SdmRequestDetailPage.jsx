@@ -10,14 +10,16 @@ const SdmRequestDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   
+  // NEW STATE FOR CONFIRMATION POPUP
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // 'approve' or 'reject'
+  
   const { requestId } = useParams();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await getSdmRequestDetails(requestId);
-        console.log(response.data);
-        
         setRequestData(response.data);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -30,49 +32,49 @@ const SdmRequestDetailPage = () => {
     fetchData();
   }, [requestId]);
 
-  const handleApprove = async () => {
+  // NEW: CONFIRMATION HANDLERS
+  const handleActionConfirmation = (action) => {
+    setPendingAction(action);
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmAction = async () => {
+    setShowConfirmation(false);
     setActionLoading(true);
+    
     try {
-      await approveRequestBySdm(requestId );
-      setRequestData(prev => ({
-        ...prev,
+      if (pendingAction === 'approve') {
+        await approveRequestBySdm(requestId);
+        setRequestData(prev => ({
+          ...prev,
         wfhRequest: {
           ...prev.wfhRequest
         },
-        currentUserApprovalStatus: {
-          ...prev.currentUserApprovalStatus,
-          status: "APPROVED",
-          updatedDate: new Date().toISOString().split('T')[0]
-        }
-      }));
-      toast.success("Request approved successfully!");
+          currentUserApprovalStatus: {
+            ...prev.currentUserApprovalStatus,
+            status: "APPROVED",
+            updatedDate: new Date().toISOString().split('T')[0]
+          }
+        }));
+        toast.success("Request approved successfully!");
+      } else {
+        await rejectRequestBySdm(requestId, requestData.employeeMaster.ibsEmpId);
+        setRequestData(prev => ({
+          ...prev,
+          wfhRequest: {
+            ...prev.wfhRequest,
+            status: "REJECTED"
+          },
+          currentUserApprovalStatus: {
+            ...prev.currentUserApprovalStatus,
+            status: "REJECTED",
+            updatedDate: new Date().toISOString().split('T')[0]
+          }
+        }));
+        toast.success("Request rejected successfully!");
+      }
     } catch (error) {
-      toast.error("Error approving request");
-      console.error(error);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleReject = async () => {
-    setActionLoading(true);
-    try {
-      await rejectRequestBySdm(requestId, requestData.employeeMaster.ibsEmpId);
-      setRequestData(prev => ({
-        ...prev,
-        wfhRequest: {
-          ...prev.wfhRequest,
-          status: "REJECTED"
-        },
-        currentUserApprovalStatus: {
-          ...prev.currentUserApprovalStatus,
-          status: "REJECTED",
-          updatedDate: new Date().toISOString().split('T')[0]
-        }
-      }));
-      toast.success("Request rejected successfully!");
-    } catch (error) {
-      toast.error("Error rejecting request");
+      toast.error(`Error ${pendingAction === 'approve' ? 'approving' : 'rejecting'} request`);
       console.error(error);
     } finally {
       setActionLoading(false);
@@ -109,6 +111,40 @@ const SdmRequestDetailPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <ToastContainer position="top-center" autoClose={3000} />
+      
+      {/* NEW: CONFIRMATION POPUP */}
+      {showConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Confirm Submission
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to {pendingAction} this request? 
+              {pendingAction === 'approve' &&
+              <div className="">
+                This action will be submitted to HR.
+              </div>
+              }
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowConfirmation(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmAction}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+              >
+                Confirm {pendingAction === 'approve' ? 'Approval' : 'Rejection'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
@@ -240,7 +276,7 @@ const SdmRequestDetailPage = () => {
           {isPending && (
             <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-end space-x-4">
               <button
-                onClick={handleReject}
+                onClick={() => handleActionConfirmation('reject')}
                 disabled={actionLoading}
                 className={`px-4 py-2 rounded-md text-sm font-medium flex items-center ${
                   actionLoading
@@ -259,7 +295,7 @@ const SdmRequestDetailPage = () => {
                 ) : "Reject"}
               </button>
               <button
-                onClick={handleApprove}
+                onClick={() => handleActionConfirmation('approve')}
                 disabled={actionLoading}
                 className={`px-4 py-2 rounded-md text-sm font-medium flex items-center ${
                   actionLoading

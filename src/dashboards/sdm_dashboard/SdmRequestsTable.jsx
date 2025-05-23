@@ -219,7 +219,7 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setViewMode("grouped")}
-            className={`px-3 py-1 text-sm rounded-md ${
+            className={`px-3 py-2 text-sm rounded-md ${
               viewMode === "grouped"
                 ? "bg-indigo-600 text-white"
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -229,7 +229,7 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
           </button>
           <button
             onClick={() => setViewMode("ungrouped")}
-            className={`px-3 py-1 text-sm rounded-md ${
+            className={`px-3 py-2 text-sm rounded-md ${
               viewMode === "ungrouped"
                 ? "bg-indigo-600 text-white"
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"

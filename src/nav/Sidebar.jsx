@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
   const [showPopup, setShowPopup] = useState(false);
   const popupRef = useRef(null);
-
+  const navigate = useNavigate();
   const handleLogout = () => {
     logout();
   };
@@ -40,28 +40,51 @@ const Sidebar = () => {
     }
   };
 
-  // Custom NavLink component for dashboard-specific routes
-  const DashboardNavLink = ({ to, children }) => (
-    <NavLink
-      to={to}
-      end
-      className={({ isActive }) =>
-        `flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+  const DashboardNavLink = ({ to, children }) => {
+    const location = useLocation();
+
+    // Define paths that should NOT trigger Dashboard active state
+    const excludedPaths = [
+      `${getBasePath()}/calendar`,
+      `${getBasePath()}/audit-and-reports`,
+      // Add more if needed
+    ];
+
+    // Check if current path is the Dashboard or a non-excluded subpath
+    const isDashboardActive =
+      to === getBasePath() &&
+      (location.pathname === to ||
+        (location.pathname.startsWith(to) &&
+          !excludedPaths.some((path) => location.pathname.startsWith(path))));
+
+    // Check if current path matches this link (for non-Dashboard links)
+    const isNonDashboardActive =
+      to !== getBasePath() && location.pathname === to;
+
+    const isActive = isDashboardActive || isNonDashboardActive;
+
+    return (
+      <NavLink
+        to={to}
+        className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors  ${
           isActive
             ? "bg-indigo-50 text-indigo-700"
             : "text-gray-600 hover:bg-gray-100"
-        }`
-      }
-    >
-      {children}
-    </NavLink>
-  );
+        }`}
+      >
+        {children}
+      </NavLink>
+    );
+  };
 
   return (
     <div className="w-64 h-screen bg-white border-r border-gray-200 flex flex-col fixed z-10">
       {/* Logo Section */}
-      <div className="px-6 py-5 border-b border-gray-200">
-        <h1 className="text-xl font-semibold text-gray-800 flex items-center">
+      <div
+        className="px-6 py-5 border-b border-gray-200"
+        onClick={() => navigate(getBasePath())} 
+      >
+        <h1 className="text-xl font-semibold text-gray-800 flex items-center cursor-default">
           <svg
             className="w-6 h-6 text-indigo-600 mr-2"
             fill="none"
@@ -136,7 +159,10 @@ const Sidebar = () => {
       </nav>
 
       {/* Profile Section */}
-      <div className="relative px-4 py-4 border-t border-gray-200 mt-auto" ref={popupRef}>
+      <div
+        className="relative px-4 py-4 border-t border-gray-200 mt-auto"
+        ref={popupRef}
+      >
         <div
           className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
           onClick={() => setShowPopup(!showPopup)}

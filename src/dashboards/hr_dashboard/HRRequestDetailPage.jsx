@@ -11,6 +11,10 @@ const HrRequestDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
+  // NEW STATE FOR CONFIRMATION POPUP
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // 'approve' or 'reject'
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -32,55 +36,56 @@ const HrRequestDetailPage = () => {
     fetchData();
   }, [requestId]);
 
-  const handleApprove = async () => {
-    setActionLoading(true);
-    try {
-      await approveRequestByHR(requestId);
-      setRequestData(prev => ({
-        ...prev,
-        wfhRequest: {
-          ...prev.wfhRequest,
-          status: "APPROVED"
-        },
-        currentUserApprovalStatus: {
-          ...prev.currentUserApprovalStatus,
-          status: "APPROVED",
-          updatedDate: new Date().toISOString().split('T')[0]
-        }
-      }));
-      toast.success("Request approved successfully!");
-    } catch (err) {
-      toast.error("Error approving request");
-      console.error(err);
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
-  const handleReject = async () => {
-    setActionLoading(true);
-    try {
-      await rejectRequestByHR(requestId);
-      setRequestData(prev => ({
-        ...prev,
-        wfhRequest: {
-          ...prev.wfhRequest,
-          status: "REJECTED"
-        },
-        currentUserApprovalStatus: {
-          ...prev.currentUserApprovalStatus,
-          status: "REJECTED",
-          updatedDate: new Date().toISOString().split('T')[0]
+    // NEW: CONFIRMATION HANDLERS
+    const handleActionConfirmation = (action) => {
+      setPendingAction(action);
+      setShowConfirmation(true);
+    };
+
+    const handleConfirmAction = async () => {
+      setShowConfirmation(false);
+      setActionLoading(true);
+      
+      try {
+        if (pendingAction === 'approve') {
+          await approveRequestByHR(requestId);
+          setRequestData(prev => ({
+            ...prev,
+            wfhRequest: {
+              ...prev.wfhRequest,
+              status: "APPROVED"
+            },
+            currentUserApprovalStatus: {
+              ...prev.currentUserApprovalStatus,
+              status: "APPROVED",
+              updatedDate: new Date().toISOString().split('T')[0]
+            }
+          }));
+          toast.success("Request approved successfully!");
+        } else {
+          await rejectRequestByHR(requestId);
+          setRequestData(prev => ({
+            ...prev,
+            wfhRequest: {
+              ...prev.wfhRequest,
+              status: "REJECTED"
+            },
+            currentUserApprovalStatus: {
+              ...prev.currentUserApprovalStatus,
+              status: "REJECTED",
+              updatedDate: new Date().toISOString().split('T')[0]
+            }
+          }));
+          toast.success("Request rejected successfully!");
         }
-      }));
-      toast.success("Request rejected successfully!");
-    } catch (err) {
-      toast.error("Error rejecting request");
-      console.error(err);
-    } finally {
-      setActionLoading(false);
-    }
-  };
+      } catch (error) {
+        toast.error(`Error ${pendingAction === 'approve' ? 'approving' : 'rejecting'} request`);
+        console.error(error);
+      } finally {
+        setActionLoading(false);
+      }
+    };
 
   if (loading) {
     return (
@@ -112,6 +117,35 @@ const HrRequestDetailPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <ToastContainer position="top-center" autoClose={3000} />
+
+      {/* NEW: CONFIRMATION POPUP */}
+      {showConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Confirm Submission
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to {pendingAction} this request? 
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowConfirmation(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmAction}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+              >
+                Confirm {pendingAction === 'approve' ? 'Approval' : 'Rejection'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
@@ -203,7 +237,7 @@ const HrRequestDetailPage = () => {
           {isPending && (
             <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-end space-x-4">
               <button
-                onClick={handleReject}
+                onClick={() => handleActionConfirmation('reject')}
                 disabled={actionLoading}
                 className={`px-4 py-2 rounded-md text-sm font-medium flex items-center ${
                   actionLoading
@@ -222,7 +256,7 @@ const HrRequestDetailPage = () => {
                 ) : "Reject"}
               </button>
               <button
-                onClick={handleApprove}
+                onClick={() => handleActionConfirmation('approve')}
                 disabled={actionLoading}
                 className={`px-4 py-2 rounded-md text-sm font-medium flex items-center ${
                   actionLoading
