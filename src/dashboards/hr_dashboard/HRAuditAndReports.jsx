@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from "react";
 import { saveAs } from "file-saver";
 import * as XLSX from "xlsx";
@@ -64,13 +62,13 @@ const HRAuditAndReports = () => {
         const hierarchy = {};
         response.data.forEach((request) => {
           const sdmId = request.request.dmId;
-          const sdmName = request.employeeMaster?.dm || `SDM ${sdmId}`; // Use actual SDM name if available
+          const sdmName = request.sdmName || `SDM ${sdmId}`; // Use sdmName from response
           const teamOwnerName = request.teamOwnerName;
           
           if (sdmId && teamOwnerName) {
             if (!hierarchy[sdmId]) {
               hierarchy[sdmId] = {
-                name: sdmName, // Use the actual SDM name here
+                name: sdmName,
                 teams: new Set()
               };
             }
@@ -112,8 +110,6 @@ const HRAuditAndReports = () => {
     }
     return null;
   };
-
-
 
   // Filter requests based on filters
   const filteredRequests = requests.filter(({ userName, request, teamOwnerName, hrStatus }) => {
@@ -186,10 +182,18 @@ const HRAuditAndReports = () => {
   });
 
   // Get unique SDMs for filter dropdown
-  const uniqueSdms = Object.keys(teamHierarchy).map(sdmId => ({
-    id: sdmId,
-    name: teamHierarchy[sdmId].name
-  }));
+  const uniqueSdms = requests.reduce((acc, { request, sdmName }) => {
+    const sdmId = request.dmId;
+    const name = sdmName || `SDM ${sdmId}`;
+    
+    if (sdmId && !acc.some(sdm => sdm.id === sdmId.toString())) {
+      acc.push({
+        id: sdmId.toString(),
+        name: name
+      });
+    }
+    return acc;
+  }, []);
 
   // Get teams for the selected SDM
   const getTeamsForSelectedSdm = () => {
@@ -569,7 +573,7 @@ const HRAuditAndReports = () => {
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     onClick={() => requestSort("request.dmId")}
                   >
-                    SDM ID {getSortIndicator("request.dmId")}
+                    SDM {getSortIndicator("request.dmId")}
                   </th>
                   <th
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
@@ -600,6 +604,7 @@ const HRAuditAndReports = () => {
                       hrStatus,
                       hrUpdatedDate,
                       teamOwnerName,
+                      sdmName
                     }) => (
                       <tr key={request.requestId} className="hover:bg-gray-50">
                         <td className="px-6 py-4">
@@ -643,7 +648,7 @@ const HRAuditAndReports = () => {
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
-                            {request.dmId}
+                            {sdmName || `SDM ${request.dmId}`}
                           </div>
                         </td>
                         <td className="px-6 py-4">
