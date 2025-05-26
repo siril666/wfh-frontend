@@ -149,7 +149,7 @@ const HRRequestsTable = ({ requests, activeFilter }) => {
         groupName = `Team: ${teamOwnerName} (ID: ${groupKey})`;
       } else if (groupBy === "sdm") {
         groupKey = request.dmId;
-        groupName = `SDM: ${requestData.userName} (ID: ${groupKey})`;
+        groupName = `SDM: ${requestData.sdmName} (ID: ${groupKey})`;
       }
 
       if (!acc[groupKey]) {
