@@ -51,40 +51,40 @@ const HRAuditAndReports = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [teamHierarchy, setTeamHierarchy] = useState({}); // { sdmId: { name: sdmName, teams: [teamManager1, teamManager2, ...] } }
- 
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await getAllWFHRequestForHR();
         setRequests(response.data);
-        
+
         // Build team hierarchy from the data
         const hierarchy = {};
         response.data.forEach((request) => {
           const sdmId = request.request.dmId;
           const sdmName = request.sdmName || `SDM ${sdmId}`; // Use sdmName from response
           const teamOwnerName = request.teamOwnerName;
-          
+
           if (sdmId && teamOwnerName) {
             if (!hierarchy[sdmId]) {
               hierarchy[sdmId] = {
                 name: sdmName,
-                teams: new Set()
+                teams: new Set(),
               };
             }
             hierarchy[sdmId].teams.add(teamOwnerName);
           }
         });
-        
+
         // Convert Sets to Arrays
         const formattedHierarchy = {};
-        Object.keys(hierarchy).forEach(sdmId => {
+        Object.keys(hierarchy).forEach((sdmId) => {
           formattedHierarchy[sdmId] = {
             name: hierarchy[sdmId].name,
-            teams: Array.from(hierarchy[sdmId].teams)
+            teams: Array.from(hierarchy[sdmId].teams),
           };
         });
-        
+
         setTeamHierarchy(formattedHierarchy);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -112,52 +112,58 @@ const HRAuditAndReports = () => {
   };
 
   // Filter requests based on filters
-  const filteredRequests = requests.filter(({ userName, request, teamOwnerName, hrStatus }) => {
-    // Search term filter
-    const matchesSearch =
-      userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.ibsEmpId.toString().includes(searchTerm) ||
-      request.categoryOfReason.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredRequests = requests.filter(
+    ({ userName, request, teamOwnerName, hrStatus }) => {
+      // Search term filter
+      const matchesSearch =
+        userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.ibsEmpId.toString().includes(searchTerm) ||
+        request.categoryOfReason
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
 
-    // Date filter
-    const requestDate = new Date(request.requestedStartDate);
-    let matchesDate = true;
+      // Date filter
+      const requestDate = new Date(request.requestedStartDate);
+      let matchesDate = true;
 
-    if (dateFilter === "week") {
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      matchesDate = requestDate >= oneWeekAgo;
-    } else if (dateFilter === "month") {
-      const oneMonthAgo = new Date();
-      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-      matchesDate = requestDate >= oneMonthAgo;
-    } else if (dateFilter === "quarter") {
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-      matchesDate = requestDate >= threeMonthsAgo;
-    } else if (dateFilter === "custom" && startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      matchesDate = requestDate >= start && requestDate <= end;
+      if (dateFilter === "week") {
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        matchesDate = requestDate >= oneWeekAgo;
+      } else if (dateFilter === "month") {
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        matchesDate = requestDate >= oneMonthAgo;
+      } else if (dateFilter === "quarter") {
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        matchesDate = requestDate >= threeMonthsAgo;
+      } else if (dateFilter === "custom" && startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        matchesDate = requestDate >= start && requestDate <= end;
+      }
+
+      // SDM filter
+      const matchesSdm = sdmFilter
+        ? request.dmId.toString() === sdmFilter
+        : true;
+
+      // Team filter
+      const matchesTeam = teamFilter ? teamOwnerName === teamFilter : true;
+
+      // Status filter
+      const matchesStatus = statusFilter ? hrStatus === statusFilter : true;
+
+      return (
+        matchesSearch &&
+        matchesDate &&
+        matchesSdm &&
+        matchesTeam &&
+        matchesStatus
+      );
     }
-
-    // SDM filter
-    const matchesSdm = sdmFilter
-      ? request.dmId.toString() === sdmFilter
-      : true;
-
-    // Team filter
-    const matchesTeam = teamFilter
-      ? teamOwnerName === teamFilter
-      : true;
-
-    // Status filter
-    const matchesStatus = statusFilter
-      ? hrStatus === statusFilter
-      : true;
-
-    return matchesSearch && matchesDate && matchesSdm && matchesTeam && matchesStatus;
-  });
+  );
 
   // Sort filtered requests
   const sortedRequests = [...filteredRequests].sort((a, b) => {
@@ -185,11 +191,11 @@ const HRAuditAndReports = () => {
   const uniqueSdms = requests.reduce((acc, { request, sdmName }) => {
     const sdmId = request.dmId;
     const name = sdmName || `SDM ${sdmId}`;
-    
-    if (sdmId && !acc.some(sdm => sdm.id === sdmId.toString())) {
+
+    if (sdmId && !acc.some((sdm) => sdm.id === sdmId.toString())) {
       acc.push({
         id: sdmId.toString(),
-        name: name
+        name: name,
       });
     }
     return acc;
@@ -201,7 +207,6 @@ const HRAuditAndReports = () => {
     return teamHierarchy[sdmFilter]?.teams || [];
   };
 
-  // Prepare data for the graph
   const prepareGraphData = () => {
     if (graphType === "monthly") {
       const monthlyData = filteredRequests.reduce(
@@ -219,7 +224,15 @@ const HRAuditAndReports = () => {
         {}
       );
 
-      return Object.values(monthlyData);
+      // Convert to array and sort by date
+      const monthlyArray = Object.values(monthlyData);
+      monthlyArray.sort((a, b) => {
+        const dateA = new Date(a.name);
+        const dateB = new Date(b.name);
+        return dateA - dateB; // This will sort from oldest to newest
+      });
+
+      return monthlyArray; // This is the only return for monthly case
     } else if (graphType === "team") {
       const teamData = filteredRequests.reduce(
         (acc, { teamOwnerName, hrStatus }) => {
@@ -271,24 +284,18 @@ const HRAuditAndReports = () => {
 
     const worksheet = XLSX.utils.json_to_sheet(
       dataToExport.map(
-        ({
-          userName,
-          request,
-          hrStatus,
-          hrUpdatedDate,
-          teamOwnerName,
-        }) => ({
+        ({ userName, request, hrStatus, hrUpdatedDate, teamOwnerName }) => ({
           "Employee Name": userName,
           "Employee ID": request.ibsEmpId,
           "Start Date": request.requestedStartDate,
           "End Date": request.requestedEndDate,
-          "Duration": request.termDuration,
-          "Reason": request.employeeReason,
-          "Category": request.categoryOfReason,
-          "Priority": priorityLabels[request.priority],
-          "Location": request.currentLocation,
+          Duration: request.termDuration,
+          Reason: request.employeeReason,
+          Category: request.categoryOfReason,
+          Priority: priorityLabels[request.priority],
+          Location: request.currentLocation,
           "SDM ID": request.dmId,
-          "Team": teamOwnerName,
+          Team: teamOwnerName,
           "HR Status": hrStatus,
           "HR Action Date": hrUpdatedDate || "N/A",
         })
@@ -304,7 +311,10 @@ const HRAuditAndReports = () => {
     const data = new Blob([excelBuffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
-    saveAs(data, `WFH_HR_Report_${new Date().toISOString().split("T")[0]}.xlsx`);
+    saveAs(
+      data,
+      `WFH_HR_Report_${new Date().toISOString().split("T")[0]}.xlsx`
+    );
   };
 
   if (loading) {
@@ -380,32 +390,33 @@ const HRAuditAndReports = () => {
           </div>
 
           {/* Team Filter */}
-          <div className="w-full sm:w-48">
-            <div className="relative w-full">
-              <select
-                className="appearance-none w-full border border-gray-300 rounded-md px-3 py-2 pr-10 bg-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                value={teamFilter}
-                onChange={(e) => setTeamFilter(e.target.value)}
-                disabled={!sdmFilter}
-              >
-                <option value="">All Teams</option>
-                {getTeamsForSelectedSdm().map((team) => (
-                  <option key={team} value={team}>
-                    {team}
-                  </option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                <svg
-                  className="h-4 w-4"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
+          {sdmFilter && (
+            <div className="w-full sm:w-48">
+              <div className="relative w-full">
+                <select
+                  className="appearance-none w-full border border-gray-300 rounded-md px-3 py-2 pr-10 bg-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  value={teamFilter}
+                  onChange={(e) => setTeamFilter(e.target.value)}
                 >
-                  <path d="M7 7l3-3 3 3m0 6l-3 3-3-3" />
-                </svg>
+                  <option value="">All Teams</option>
+                  {getTeamsForSelectedSdm().map((team) => (
+                    <option key={team} value={team}>
+                      {team}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                  <svg
+                    className="h-4 w-4"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path d="M7 7l3-3 3 3m0 6l-3 3-3-3" />
+                  </svg>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Status Filter */}
           <div className="w-full sm:w-48">
@@ -604,7 +615,7 @@ const HRAuditAndReports = () => {
                       hrStatus,
                       hrUpdatedDate,
                       teamOwnerName,
-                      sdmName
+                      sdmName,
                     }) => (
                       <tr key={request.requestId} className="hover:bg-gray-50">
                         <td className="px-6 py-4">
@@ -641,7 +652,9 @@ const HRAuditAndReports = () => {
                         </td>
                         <td className="px-6 py-4">
                           <span
-                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${priorityStyles[request.priority]}`}
+                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              priorityStyles[request.priority]
+                            }`}
                           >
                             {priorityLabels[request.priority]}
                           </span>
