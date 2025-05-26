@@ -22,7 +22,7 @@ import { axiosInstance8080, axiosInstanceSecurity8080, axiosInstanceSecurity8081
   
   // Employee APIs
   export const getRequestsHistory = () => {
-    return axiosInstanceSecurity8081.get(`/employee/requests`);
+    return axiosInstanceSecurity8081.get(`/employee/requests/status`);
   };
   
   export const getCalendarForEmployee = () => {

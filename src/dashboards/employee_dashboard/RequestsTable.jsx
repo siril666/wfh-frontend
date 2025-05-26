@@ -24,12 +24,75 @@ const priorityLabels = {
   LOW: "Low"
 };
 
+const ApprovalFlowPopup = ({ request, onClose }) => {
+  const statusIcons = {
+    APPROVED: '✓',
+    REJECTED: '✕',
+    PENDING: '⋯'
+  };
+
+  const ApprovalStep = ({ step, title, status }) => (
+    <div className="relative pl-8 pb-4">
+      <div className="absolute left-0 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm">
+        {step}
+      </div>
+      <div className="flex justify-between">
+        <span className="text-sm">{title}</span>
+        <span className={`px-2 py-1 text-xs rounded-full ${statusStyles[status]}`}>
+          {statusIcons[status]} {statusLabels[status]}
+        </span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-md p-4 w-full max-w-sm">
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="font-medium">Approval Flow #{request.request.requestId}</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            ×
+          </button>
+        </div>
+
+        <div className="border-l-2 border-gray-200 pl-4 mb-4">
+          <ApprovalStep step={1} title="Team Manager" status={request.tmStatus} />
+          {request.tmStatus === 'APPROVED' && (
+            <ApprovalStep step={2} title="Senior Manager" status={request.sdmStatus} />
+          )}
+          {request.tmStatus === 'APPROVED' && request.sdmStatus === 'APPROVED' && (
+            <ApprovalStep step={3} title="HR Manager" status={request.hrStatus} />
+          )}
+        </div>
+
+        <div className="text-sm p-3 bg-gray-50 rounded mb-4">
+          {request.rejectedBy ? (
+            <p className="text-red-600">Rejected by {request.rejectedBy}</p>
+          ) : request.currentStage === 'COMPLETED' ? (
+            <p className="text-green-600">Approved</p>
+          ) : (
+            <p>Pending with {request.currentStage}</p>
+          )}
+        </div>
+
+        <button 
+          onClick={onClose}
+          className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const RequestsTable = ({ requests, navigate }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({
     key: "requestedStartDate",
     direction: "desc",
   });
+  const [selectedRequest, setSelectedRequest] = useState(null);
 
   const sortedAndFilteredRequests = useMemo(() => {
     let filteredRequests = [...requests];
@@ -39,10 +102,10 @@ const RequestsTable = ({ requests, navigate }) => {
       const term = searchTerm.toLowerCase();
       filteredRequests = filteredRequests.filter((request) => {
         return (
-          request.categoryOfReason.toLowerCase().includes(term) ||
-          request.employeeReason.toLowerCase().includes(term) ||
-          request.status.toLowerCase().includes(term) ||
-          request.priority.toLowerCase().includes(term)
+          request.request.categoryOfReason.toLowerCase().includes(term) ||
+          request.request.employeeReason.toLowerCase().includes(term) ||
+          request.request.status.toLowerCase().includes(term) ||
+          request.request.priority.toLowerCase().includes(term)
         );
       });
     }
@@ -50,18 +113,27 @@ const RequestsTable = ({ requests, navigate }) => {
     // Apply sorting
     if (sortConfig.key) {
       filteredRequests.sort((a, b) => {
+        // Handle nested request properties
+        const aValue = sortConfig.key.includes('.') 
+          ? sortConfig.key.split('.').reduce((o, i) => o[i], a)
+          : a[sortConfig.key];
+        
+        const bValue = sortConfig.key.includes('.') 
+          ? sortConfig.key.split('.').reduce((o, i) => o[i], b)
+          : b[sortConfig.key];
+
         // Special handling for dates
-        if (sortConfig.key === "requestedStartDate" || sortConfig.key === "requestedEndDate") {
-          const dateA = new Date(a[sortConfig.key]);
-          const dateB = new Date(b[sortConfig.key]);
+        if (sortConfig.key.includes('Date')) {
+          const dateA = new Date(aValue);
+          const dateB = new Date(bValue);
           return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
         }
 
         // Default comparison for other fields
-        if (a[sortConfig.key] < b[sortConfig.key]) {
+        if (aValue < bValue) {
           return sortConfig.direction === "asc" ? -1 : 1;
         }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
+        if (aValue > bValue) {
           return sortConfig.direction === "asc" ? 1 : -1;
         }
         return 0;
@@ -119,27 +191,27 @@ const RequestsTable = ({ requests, navigate }) => {
             <tr>
               <th 
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5 cursor-pointer"
-                onClick={() => requestSort("categoryOfReason")}
+                onClick={() => requestSort("request.categoryOfReason")}
               >
-                Category {getSortIndicator("categoryOfReason")}
+                Category {getSortIndicator("request.categoryOfReason")}
               </th>
               <th 
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6 cursor-pointer"
-                onClick={() => requestSort("requestedStartDate")}
+                onClick={() => requestSort("request.requestedStartDate")}
               >
-                Dates {getSortIndicator("requestedStartDate")}
+                Dates {getSortIndicator("request.requestedStartDate")}
               </th>
               <th 
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6 cursor-pointer"
-                onClick={() => requestSort("status")}
+                onClick={() => requestSort("request.status")}
               >
-                Status {getSortIndicator("status")}
+                Status {getSortIndicator("request.status")}
               </th>
               <th 
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6 cursor-pointer"
-                onClick={() => requestSort("priority")}
+                onClick={() => requestSort("request.priority")}
               >
-                Priority {getSortIndicator("priority")}
+                Priority {getSortIndicator("request.priority")}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
                 Duration
@@ -152,34 +224,41 @@ const RequestsTable = ({ requests, navigate }) => {
           <tbody className="bg-white divide-y divide-gray-200">
             {sortedAndFilteredRequests.length > 0 ? (
               sortedAndFilteredRequests.map((request) => (
-                <tr key={request.requestId} className="hover:bg-gray-50">
+                <tr 
+                  key={request.request.requestId} 
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={() => setSelectedRequest(request)}
+                >
                   <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">{request.categoryOfReason}</div>
-                    <div className="text-sm text-gray-500 truncate max-w-xs">{request.employeeReason}</div>
+                    <div className="text-sm font-medium text-gray-900">{request.request.categoryOfReason}</div>
+                    <div className="text-sm text-gray-500 truncate max-w-xs">{request.request.employeeReason}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {new Date(request.requestedStartDate).toLocaleDateString()} - {' '}
-                      {new Date(request.requestedEndDate).toLocaleDateString()}
+                      {new Date(request.request.requestedStartDate).toLocaleDateString()} - {' '}
+                      {new Date(request.request.requestedEndDate).toLocaleDateString()}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusStyles[request.status]}`}>
-                      {statusLabels[request.status]}
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusStyles[request.request.status]}`}>
+                      {statusLabels[request.request.status]}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${priorityStyles[request.priority]}`}>
-                      {priorityLabels[request.priority]}
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${priorityStyles[request.request.priority]}`}>
+                      {priorityLabels[request.request.priority]}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {request.termDuration}
+                    {request.request.termDuration}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    {request.status === "PENDING" && (
+                    {request.request.status === "PENDING" && (
                       <button
-                        onClick={() => navigate(`/employee-dashboard/wfh_request/edit/${request.requestId}`)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/employee-dashboard/wfh_request/edit/${request.request.requestId}`);
+                        }}
                         className="text-indigo-600 hover:text-indigo-900"
                       >
                         Edit
@@ -198,6 +277,14 @@ const RequestsTable = ({ requests, navigate }) => {
           </tbody>
         </table>
       </div>
+
+      {/* Approval Flow Popup */}
+      {selectedRequest && (
+        <ApprovalFlowPopup 
+          request={selectedRequest} 
+          onClose={() => setSelectedRequest(null)}
+        />
+      )}
     </div>
   );
 };

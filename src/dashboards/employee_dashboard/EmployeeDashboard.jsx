@@ -15,7 +15,7 @@ export default function EmployeeDashboard() {
   useEffect(() => {
     getRequestsHistory().then((response) => {
       const sortedRequests = response.data.sort(
-        (a, b) => b.requestId - a.requestId
+        (a, b) => b.request.requestId - a.request.requestId
       );
       setAllRequests(sortedRequests);
       setFilteredRequests(sortedRequests); // Show all by default
@@ -33,13 +33,13 @@ export default function EmployeeDashboard() {
   // Calculate summary stats
   const totalRequests = allRequests.length;
   const approvedCount = allRequests.filter(
-    (req) => req.status === "APPROVED"
+    (req) => req.request.status === "APPROVED"
   ).length;
   const pendingCount = allRequests.filter(
-    (req) => req.status === "PENDING"
+    (req) => req.request.status === "PENDING"
   ).length;
   const rejectedCount = allRequests.filter(
-    (req) => req.status === "REJECTED"
+    (req) => req.request.status === "REJECTED"
   ).length;
 
   // Filter requests based on status
@@ -48,51 +48,50 @@ export default function EmployeeDashboard() {
     if (status === "ALL") {
       setFilteredRequests(allRequests);
     } else {
-      setFilteredRequests(allRequests.filter((req) => req.status === status));
+      setFilteredRequests(allRequests.filter((req) => req.request.status === status));
     }
   };
 
   return (
+    <div className="max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8 p-6">
+        <h1 className="text-2xl font-light text-gray-800">
+          Hello {userName}
+        </h1>
+        <button
+          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+          onClick={() => navigate("/employee-dashboard/wfh_request")}
+        >
+          New Request
+        </button>
+      </div>
 
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8 p-6">
-          <h1 className="text-2xl font-light text-gray-800">
-            Hello {userName}
-          </h1>
-          <button
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-            onClick={() => navigate("/employee-dashboard/wfh_request")}
-          >
-            New Request
-          </button>
-        </div>
+      {/* Summary Cards */}
+      <SummaryCards
+        total={totalRequests}
+        approved={approvedCount}
+        pending={pendingCount}
+        rejected={rejectedCount}
+        onFilter={filterRequests}
+        activeFilter={activeFilter}
+      />
 
-        {/* Summary Cards */}
-        <SummaryCards
-          total={totalRequests}
-          approved={approvedCount}
-          pending={pendingCount}
-          rejected={rejectedCount}
-          onFilter={filterRequests}
-          activeFilter={activeFilter}
-        />
-
-        {/* Requests Table */}
-        <div className="mt-8 bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-light text-gray-800">
-                Request History
-              </h2>
-              <div className="text-sm text-gray-500">
-                Showing: {filteredRequests.length} of {allRequests.length}{" "}
-                requests
-              </div>
+      {/* Requests Table */}
+      <div className="mt-8 bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-light text-gray-800">
+              Request History
+            </h2>
+            <div className="text-sm text-gray-500">
+              Showing: {filteredRequests.length} of {allRequests.length}{" "}
+              requests
             </div>
-            <RequestsTable requests={filteredRequests} navigate={navigate} />
           </div>
+          <RequestsTable requests={filteredRequests} navigate={navigate} />
         </div>
       </div>
+    </div>
   );
 }
