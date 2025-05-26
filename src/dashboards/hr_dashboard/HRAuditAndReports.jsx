@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect } from "react";
 import { saveAs } from "file-saver";
 import * as XLSX from "xlsx";
@@ -46,15 +48,46 @@ const HRAuditAndReports = () => {
   const [dateFilter, setDateFilter] = useState("all"); // 'all', 'week', 'month', 'quarter', 'custom'
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [sdmFilter, setSdmFilter] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-
+  const [teamHierarchy, setTeamHierarchy] = useState({}); // { sdmId: { name: sdmName, teams: [teamManager1, teamManager2, ...] } }
+ 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await getAllWFHRequestForHR();
         setRequests(response.data);
+        
+        // Build team hierarchy from the data
+        const hierarchy = {};
+        response.data.forEach((request) => {
+          const sdmId = request.request.dmId;
+          const sdmName = request.employeeMaster?.dm || `SDM ${sdmId}`; // Use actual SDM name if available
+          const teamOwnerName = request.teamOwnerName;
+          
+          if (sdmId && teamOwnerName) {
+            if (!hierarchy[sdmId]) {
+              hierarchy[sdmId] = {
+                name: sdmName, // Use the actual SDM name here
+                teams: new Set()
+              };
+            }
+            hierarchy[sdmId].teams.add(teamOwnerName);
+          }
+        });
+        
+        // Convert Sets to Arrays
+        const formattedHierarchy = {};
+        Object.keys(hierarchy).forEach(sdmId => {
+          formattedHierarchy[sdmId] = {
+            name: hierarchy[sdmId].name,
+            teams: Array.from(hierarchy[sdmId].teams)
+          };
+        });
+        
+        setTeamHierarchy(formattedHierarchy);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -79,6 +112,8 @@ const HRAuditAndReports = () => {
     }
     return null;
   };
+
+
 
   // Filter requests based on filters
   const filteredRequests = requests.filter(({ userName, request, teamOwnerName, hrStatus }) => {
@@ -110,9 +145,14 @@ const HRAuditAndReports = () => {
       matchesDate = requestDate >= start && requestDate <= end;
     }
 
+    // SDM filter
+    const matchesSdm = sdmFilter
+      ? request.dmId.toString() === sdmFilter
+      : true;
+
     // Team filter
     const matchesTeam = teamFilter
-      ? teamOwnerName.toLowerCase().includes(teamFilter.toLowerCase())
+      ? teamOwnerName === teamFilter
       : true;
 
     // Status filter
@@ -120,7 +160,7 @@ const HRAuditAndReports = () => {
       ? hrStatus === statusFilter
       : true;
 
-    return matchesSearch && matchesDate && matchesTeam && matchesStatus;
+    return matchesSearch && matchesDate && matchesSdm && matchesTeam && matchesStatus;
   });
 
   // Sort filtered requests
@@ -145,10 +185,17 @@ const HRAuditAndReports = () => {
     return 0;
   });
 
-  // Get unique teams for filter dropdown
-  const uniqueTeams = [
-    ...new Set(requests.map((request) => request.teamOwnerName)),
-  ].filter(Boolean);
+  // Get unique SDMs for filter dropdown
+  const uniqueSdms = Object.keys(teamHierarchy).map(sdmId => ({
+    id: sdmId,
+    name: teamHierarchy[sdmId].name
+  }));
+
+  // Get teams for the selected SDM
+  const getTeamsForSelectedSdm = () => {
+    if (!sdmFilter) return [];
+    return teamHierarchy[sdmFilter]?.teams || [];
+  };
 
   // Prepare data for the graph
   const prepareGraphData = () => {
@@ -236,6 +283,7 @@ const HRAuditAndReports = () => {
           "Category": request.categoryOfReason,
           "Priority": priorityLabels[request.priority],
           "Location": request.currentLocation,
+          "SDM ID": request.dmId,
           "Team": teamOwnerName,
           "HR Status": hrStatus,
           "HR Action Date": hrUpdatedDate || "N/A",
@@ -297,6 +345,36 @@ const HRAuditAndReports = () => {
             </div>
           </div>
 
+          {/* SDM Filter */}
+          <div className="w-full sm:w-48">
+            <div className="relative w-full">
+              <select
+                className="appearance-none w-full border border-gray-300 rounded-md px-3 py-2 pr-10 bg-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                value={sdmFilter}
+                onChange={(e) => {
+                  setSdmFilter(e.target.value);
+                  setTeamFilter(""); // Reset team filter when SDM changes
+                }}
+              >
+                <option value="">All SDMs</option>
+                {uniqueSdms.map((sdm) => (
+                  <option key={sdm.id} value={sdm.id}>
+                    {sdm.name}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path d="M7 7l3-3 3 3m0 6l-3 3-3-3" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
           {/* Team Filter */}
           <div className="w-full sm:w-48">
             <div className="relative w-full">
@@ -304,9 +382,10 @@ const HRAuditAndReports = () => {
                 className="appearance-none w-full border border-gray-300 rounded-md px-3 py-2 pr-10 bg-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 value={teamFilter}
                 onChange={(e) => setTeamFilter(e.target.value)}
+                disabled={!sdmFilter}
               >
                 <option value="">All Teams</option>
-                {uniqueTeams.map((team) => (
+                {getTeamsForSelectedSdm().map((team) => (
                   <option key={team} value={team}>
                     {team}
                   </option>
@@ -488,6 +567,12 @@ const HRAuditAndReports = () => {
                   </th>
                   <th
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                    onClick={() => requestSort("request.dmId")}
+                  >
+                    SDM ID {getSortIndicator("request.dmId")}
+                  </th>
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     onClick={() => requestSort("teamOwnerName")}
                   >
                     Team {getSortIndicator("teamOwnerName")}
@@ -558,6 +643,11 @@ const HRAuditAndReports = () => {
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
+                            {request.dmId}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">
                             {teamOwnerName}
                           </div>
                           <div className="text-xs text-gray-500">
@@ -586,7 +676,7 @@ const HRAuditAndReports = () => {
                 ) : (
                   <tr>
                     <td
-                      colSpan="8"
+                      colSpan="9"
                       className="px-6 py-4 text-center text-sm text-gray-500"
                     >
                       No matching requests found

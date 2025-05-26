@@ -4,7 +4,7 @@ import SdmDashboard from "./dashboards/sdm_dashboard/SdmDashboard";
 import LoginPage from "./login/Login";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./context/ProtectedRoute";
-import UnauthorizedPage from "./login/UnAuthorizedPage";
+import UnauthorizedPage from "./login/UnauthorizedPage";
 import NotFoundPage from "./login/NotFoundPage";
 import RegisterPage from "./login/Register";
 import TeamManagerDashboard from "./dashboards/team_manager_dashboard/TeamManagerDashboard";
