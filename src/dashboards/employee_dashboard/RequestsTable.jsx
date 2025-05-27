@@ -49,7 +49,7 @@ const ApprovalFlowPopup = ({ request, onClose }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-md p-4 w-full max-w-sm">
         <div className="flex justify-between items-center mb-3">
-          <h3 className="font-medium">Approval Flow #{request.request.requestId}</h3>
+          <h3 className="font-medium">Approval Flow</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             ×
           </button>
