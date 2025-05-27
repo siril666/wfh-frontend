@@ -15,7 +15,7 @@ const RequestDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
-    // NEW STATE FOR CONFIRMATION POPUP
+  // NEW STATE FOR CONFIRMATION POPUP
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // 'approve' or 'reject'  
 
@@ -135,7 +135,7 @@ const RequestDetailPage = () => {
         </div>
       )}
 
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <button
@@ -168,12 +168,19 @@ const RequestDetailPage = () => {
           </div>
 
           {/* Request Details */}
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <DetailField label="Team" value={employeeMaster.team} />
+            <DetailField label="SVP Org" value={employeeMaster.svpOrg} />
+            <DetailField label="VP Org" value={employeeMaster.vpOrg} />
+            <DetailField label="Director Org" value={employeeMaster.directorOrg} />
             <DetailField label="Location" value={employeeMaster.location} />
+            <DetailField label="Current Location" value={wfhRequest.currentLocation} />
             <DetailField label="Start Date" value={wfhRequest.requestedStartDate} />
             <DetailField label="End Date" value={wfhRequest.requestedEndDate} />
             <DetailField label="Duration" value={duration} />
+            <DetailField label="Hiring Manager" value={employeeMaster.hm} />
+            <DetailField label="Team Owner" value={employeeMaster.teamOwner} />
+            <DetailField label="Delivery Manager" value={employeeMaster.dm} />
             <DetailField 
               label="Priority" 
               value={
@@ -189,8 +196,23 @@ const RequestDetailPage = () => {
               } 
             />
             <DetailField label="Category" value={wfhRequest.categoryOfReason} />
+            <DetailField label="Billability" value={employeeMaster.billability} />
             <DetailField 
               label="Status" 
+              value={
+                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                  wfhRequest.status === "APPROVED" 
+                    ? "bg-green-100 text-green-800" 
+                    : wfhRequest.status === "REJECTED" 
+                      ? "bg-red-100 text-red-800" 
+                      : "bg-orange-100 text-orange-800"
+                }`}>
+                  {wfhRequest.status}
+                </span>
+              } 
+            />
+            <DetailField 
+              label="Your Approval Status" 
               value={
                 <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                   currentUserApprovalStatus.status === "APPROVED" 
@@ -199,7 +221,7 @@ const RequestDetailPage = () => {
                       ? "bg-red-100 text-red-800" 
                       : "bg-orange-100 text-orange-800"
                 }`}>
-                  {currentUserApprovalStatus.status}
+                  {currentUserApprovalStatus.status} on {currentUserApprovalStatus.updatedDate}
                 </span>
               } 
             />
@@ -212,6 +234,16 @@ const RequestDetailPage = () => {
               <p className="text-gray-700 italic">"{wfhRequest.employeeReason}"</p>
             </div>
           </div>
+
+          {/* Remarks */}
+          {employeeMaster.remarks && (
+            <div className="px-6 pb-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Remarks</h3>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <p className="text-gray-700">{employeeMaster.remarks}</p>
+              </div>
+            </div>
+          )}
 
           {/* Attachment */}
           {wfhRequest.attachmentPath && (

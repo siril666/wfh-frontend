@@ -97,30 +97,30 @@ CREATE TABLE approval_workflow (
 
 -- Insert employees into employee_master (200001-200015)
 INSERT INTO employee_master (
-    ibs_emp_id, expediafgname, project_id, job_level, role, rate, hm, country, location,
+    ibs_emp_id, expediafgname, job_level, role, rate, hm, country, location,
     sow_team_name, svp_org, vp_org, director_org, team, team_owner, team_owner_id,
     dm, dm_id, billability, remarks
 ) VALUES
 -- Employees under Team A (Manager 210101, DM 210201)
-(200001, 'Ravi Kumar', 101, 'JL4', 'senior solution engineer', 50.00, 'Hari Nair', 'India', 'Bangalore', 'API Team', 'SVP-Eng', 'VP-TechOps', 'Dir-India', 'Team A', 'Renjith', 210101, 'Arun Menon', 210201, 'Billed', 'WFH for medical reason'),
-(200002, 'Neha Sharma', 101, 'JL4', 'solution engineer', 48.50, 'Hari Nair', 'India', 'Bangalore', 'API Team', 'SVP-Eng', 'VP-TechOps', 'Dir-India', 'Team A', 'Renjith', 210101, 'Arun Menon', 210201, 'Billed', 'Doctor appointment'),
-(200003, 'Amit Roy', 101, 'JL5', 'solution engineer', 53.00, 'Hari Nair', 'India', 'Bangalore', 'API Team', 'SVP-Eng', 'VP-TechOps', 'Dir-India', 'Team A', 'Renjith', 210101, 'Arun Menon', 210201, 'Unbilled', 'Family emergency'),
-(200004, 'Divya Nair', 101, 'JL3', 'solution engineer', 45.00, 'Hari Nair', 'India', 'Bangalore', 'API Team', 'SVP-Eng', 'VP-TechOps', 'Dir-India', 'Team A', 'Renjith', 210101, 'Arun Menon', 210201, 'Unbilled', 'Family event'),
-(200005, 'Sneha Iyer', 101, 'JL4', 'senior solution engineer', 51.00, 'Hari Nair', 'India', 'Bangalore', 'API Team', 'SVP-Eng', 'VP-TechOps', 'Dir-India', 'Team A', 'Renjith', 210101, 'Arun Menon', 210201, 'Billed', 'Long-term remote WFH'),
+(200001, 'Ravi Kumar', 'JL4', 'senior solution engineer', 50.00, 'Hari Nair', 'India', 'Bangalore', 'API Team', 'SVP-Eng', 'VP-TechOps', 'Dir-India', 'Team A', 'Renjith', 210101, 'Arun Menon', 210201, 'Billed', 'WFH for medical reason'),
+(200002, 'Neha Sharma', 'JL4', 'solution engineer', 48.50, 'Hari Nair', 'India', 'Bangalore', 'API Team', 'SVP-Eng', 'VP-TechOps', 'Dir-India', 'Team A', 'Renjith', 210101, 'Arun Menon', 210201, 'Billed', 'Doctor appointment'),
+(200003, 'Amit Roy',  'JL5', 'solution engineer', 53.00, 'Hari Nair', 'India', 'Bangalore', 'API Team', 'SVP-Eng', 'VP-TechOps', 'Dir-India', 'Team A', 'Renjith', 210101, 'Arun Menon', 210201, 'Unbilled', 'Family emergency'),
+(200004, 'Divya Nair',  'JL3', 'solution engineer', 45.00, 'Hari Nair', 'India', 'Bangalore', 'API Team', 'SVP-Eng', 'VP-TechOps', 'Dir-India', 'Team A', 'Renjith', 210101, 'Arun Menon', 210201, 'Unbilled', 'Family event'),
+(200005, 'Sneha Iyer', 'JL4', 'senior solution engineer', 51.00, 'Hari Nair', 'India', 'Bangalore', 'API Team', 'SVP-Eng', 'VP-TechOps', 'Dir-India', 'Team A', 'Renjith', 210101, 'Arun Menon', 210201, 'Billed', 'Long-term remote WFH'),
 
 -- Employees under Team B (Manager 210102, DM 210201)
-(200006, 'Kiran Das', 102, 'JL5', 'solution engineer', 55.00, 'Hari Nair', 'India', 'Chennai', 'UI Team', 'SVP-Eng', 'VP-Apps', 'Dir-India', 'Team B', 'Jasmine', 210102, 'Arun Menon', 210201, 'Billed', 'Personal work'),
-(200007, 'Meera S', 102, 'JL4', 'solution engineer', 47.00, 'Hari Nair', 'India', 'Chennai', 'UI Team', 'SVP-Eng', 'VP-Apps', 'Dir-India', 'Team B', 'Jasmine', 210102, 'Arun Menon', 210201, 'Billed', 'Health issues'),
-(200008, 'Rajeev Menon', 102, 'JL5', 'senior solution engineer', 58.00, 'Hari Nair', 'India', 'Chennai', 'UI Team', 'SVP-Eng', 'VP-Apps', 'Dir-India', 'Team B', 'Jasmine', 210102, 'Arun Menon', 210201, 'Unbilled', 'Personal commitment'),
-(200009, 'Priya Patel', 102, 'JL3', 'solution engineer', 42.00, 'Hari Nair', 'India', 'Chennai', 'UI Team', 'SVP-Eng', 'VP-Apps', 'Dir-India', 'Team B', 'Jasmine', 210102, 'Arun Menon', 210201, 'Billed', 'Project work'),
-(200010, 'Vikram Singh', 102, 'JL4', 'solution engineer', 49.00, 'Hari Nair', 'India', 'Chennai', 'UI Team', 'SVP-Eng', 'VP-Apps', 'Dir-India', 'Team B', 'Jasmine', 210102, 'Arun Menon', 210201, 'Billed', 'Client requirements'),
+(200006, 'Kiran Das',  'JL5', 'solution engineer', 55.00, 'Hari Nair', 'India', 'Chennai', 'UI Team', 'SVP-Eng', 'VP-Apps', 'Dir-India', 'Team B', 'Jasmine', 210102, 'Arun Menon', 210201, 'Billed', 'Personal work'),
+(200007, 'Meera S',  'JL4', 'solution engineer', 47.00, 'Hari Nair', 'India', 'Chennai', 'UI Team', 'SVP-Eng', 'VP-Apps', 'Dir-India', 'Team B', 'Jasmine', 210102, 'Arun Menon', 210201, 'Billed', 'Health issues'),
+(200008, 'Rajeev Menon',  'JL5', 'senior solution engineer', 58.00, 'Hari Nair', 'India', 'Chennai', 'UI Team', 'SVP-Eng', 'VP-Apps', 'Dir-India', 'Team B', 'Jasmine', 210102, 'Arun Menon', 210201, 'Unbilled', 'Personal commitment'),
+(200009, 'Priya Patel',  'JL3', 'solution engineer', 42.00, 'Hari Nair', 'India', 'Chennai', 'UI Team', 'SVP-Eng', 'VP-Apps', 'Dir-India', 'Team B', 'Jasmine', 210102, 'Arun Menon', 210201, 'Billed', 'Project work'),
+(200010, 'Vikram Singh', 'JL4', 'solution engineer', 49.00, 'Hari Nair', 'India', 'Chennai', 'UI Team', 'SVP-Eng', 'VP-Apps', 'Dir-India', 'Team B', 'Jasmine', 210102, 'Arun Menon', 210201, 'Billed', 'Client requirements'),
 
 -- Employees under Team C (Manager 210103, DM 210202)
-(200011, 'Ananya Gupta', 103, 'JL4', 'senior solution engineer', 52.00, 'Hari Nair', 'India', 'Delhi', 'Backend Team', 'SVP-Eng', 'VP-Infra', 'Dir-India', 'Team C', 'Aswin', 210103, 'Deepa M', 210202, 'Billed', 'Technical lead'),
-(200012, 'Rahul Verma', 103, 'JL5', 'solution engineer', 54.00, 'Hari Nair', 'India', 'Delhi', 'Backend Team', 'SVP-Eng', 'VP-Infra', 'Dir-India', 'Team C', 'Aswin', 210103, 'Deepa M', 210202, 'Unbilled', 'New joinee'),
-(200013, 'Shreya Joshi', 103, 'JL3', 'solution engineer', 44.00, 'Hari Nair', 'India', 'Delhi', 'Backend Team', 'SVP-Eng', 'VP-Infra', 'Dir-India', 'Team C', 'Aswin', 210103, 'Deepa M', 210202, 'Billed', 'Critical project'),
-(200014, 'Aditya Rao', 103, 'JL4', 'solution engineer', 48.00, 'Hari Nair', 'India', 'Delhi', 'Backend Team', 'SVP-Eng', 'VP-Infra', 'Dir-India', 'Team C', 'Aswin', 210103, 'Deepa M', 210202, 'Billed', 'Support role'),
-(200015, 'Nandini Reddy', 103, 'JL5', 'senior solution engineer', 57.00, 'Hari Nair', 'India', 'Delhi', 'Backend Team', 'SVP-Eng', 'VP-Infra', 'Dir-India', 'Team C', 'Aswin', 210103, 'Deepa M', 210202, 'Billed', 'Architect'),
+(200011, 'Ananya Gupta', 'JL4', 'senior solution engineer', 52.00, 'Hari Nair', 'India', 'Delhi', 'Backend Team', 'SVP-Eng', 'VP-Infra', 'Dir-India', 'Team C', 'Aswin', 210103, 'Deepa M', 210202, 'Billed', 'Technical lead'),
+(200012, 'Rahul Verma',  'JL5', 'solution engineer', 54.00, 'Hari Nair', 'India', 'Delhi', 'Backend Team', 'SVP-Eng', 'VP-Infra', 'Dir-India', 'Team C', 'Aswin', 210103, 'Deepa M', 210202, 'Unbilled', 'New joinee'),
+(200013, 'Shreya Joshi', 'JL3', 'solution engineer', 44.00, 'Hari Nair', 'India', 'Delhi', 'Backend Team', 'SVP-Eng', 'VP-Infra', 'Dir-India', 'Team C', 'Aswin', 210103, 'Deepa M', 210202, 'Billed', 'Critical project'),
+(200014, 'Aditya Rao',  'JL4', 'solution engineer', 48.00, 'Hari Nair', 'India', 'Delhi', 'Backend Team', 'SVP-Eng', 'VP-Infra', 'Dir-India', 'Team C', 'Aswin', 210103, 'Deepa M', 210202, 'Billed', 'Support role'),
+(200015, 'Nandini Reddy',  'JL5', 'senior solution engineer', 57.00, 'Hari Nair', 'India', 'Delhi', 'Backend Team', 'SVP-Eng', 'VP-Infra', 'Dir-India', 'Team C', 'Aswin', 210103, 'Deepa M', 210202, 'Billed', 'Architect');
 
 
 
@@ -196,7 +196,7 @@ INSERT INTO employee_info (
 (210204, 'Kavitha', 'SDM', 'kavitha@ibs.com', '9876543220', 'Kochi', 'India', TRUE),
 
 -- HR Manager
-(999001, 'Priya Sharma', 'HR_MANAGER', 'priya.sharma@ibs.com', '9876543241', 'Bangalore', 'India', TRUE);
+(999001, 'Priya Sharma', 'HR', 'priya.sharma@ibs.com', '9876543241', 'Bangalore', 'India', TRUE);
 
 
 
