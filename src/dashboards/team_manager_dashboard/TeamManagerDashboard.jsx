@@ -47,13 +47,13 @@ const TeamManagerDashboard = () => {
   // Summary stats
   const totalRequests = allRequests.length;
   const approvedCount = allRequests.filter(
-    (req) => req.request.status === "APPROVED"
+    (req) => req.tmStatus === "APPROVED"
   ).length;
   const pendingCount = allRequests.filter(
-    (req) => req.request.status === "PENDING"
+    (req) => req.tmStatus === "PENDING"
   ).length;
   const rejectedCount = allRequests.filter(
-    (req) => req.request.status === "REJECTED"
+    (req) => req.tmStatus === "REJECTED"
   ).length;
 
   // Filter requests based on status and search
@@ -76,7 +76,7 @@ const TeamManagerDashboard = () => {
     let filtered = requests;
 
     if (status !== "ALL") {
-      filtered = filtered.filter(req => req.request.status === status);
+      filtered = filtered.filter(req => req.tmStatus === status);
     }
 
     filtered = filtered.filter(req => {
