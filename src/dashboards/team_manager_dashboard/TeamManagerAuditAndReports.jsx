@@ -1,3 +1,6 @@
+
+
+
 import React, { useState, useEffect } from "react";
 import { saveAs } from "file-saver";
 import * as XLSX from "xlsx";
@@ -37,7 +40,6 @@ const priorityLabels = {
   LOW: "Low",
 };
 
-// Priority order for sorting
 const priorityOrder = {
   HIGH: 1,
   MODERATE: 2,
@@ -48,11 +50,12 @@ const TeamManagerAuditAndReports = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [viewType, setViewType] = useState("table"); // 'table' or 'graph'
-  const [graphType, setGraphType] = useState("monthly"); // 'monthly', 'reason', 'priority'
-  const [dateFilter, setDateFilter] = useState("all"); // 'all', 'week', 'month', 'quarter', 'custom'
+  const [viewType, setViewType] = useState("table");
+  const [graphType, setGraphType] = useState("monthly");
+  const [dateFilter, setDateFilter] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
   useEffect(() => {
@@ -84,7 +87,14 @@ const TeamManagerAuditAndReports = () => {
     return null;
   };
 
-  const filteredRequests = requests.filter(({ employeeName, request }) => {
+  const getHrStatus = (sdmStatus, hrStatus) => {
+    if (!sdmStatus || sdmStatus === "REJECTED") {
+      return { status: "NOT_REVIEWED", label: "Not Reviewed" };
+    }
+    return { status: hrStatus || "PENDING", label: statusLabels[hrStatus] || "Pending" };
+  };
+
+  const filteredRequests = requests.filter(({ employeeName, request, tmStatus, sdmStatus, hrStatus }) => {
     const matchesSearch =
       employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       request.ibsEmpId.toString().includes(searchTerm) ||
@@ -111,7 +121,13 @@ const TeamManagerAuditAndReports = () => {
       matchesDate = requestDate >= start && requestDate <= end;
     }
 
-    return matchesSearch && matchesDate;
+    const hrStatusInfo = getHrStatus(sdmStatus, hrStatus);
+    const matchesStatus = statusFilter ? 
+      tmStatus === statusFilter || 
+      sdmStatus === statusFilter || 
+      hrStatusInfo.status === statusFilter : true;
+
+    return matchesSearch && matchesDate && matchesStatus;
   });
 
   const sortedRequests = [...filteredRequests].sort((a, b) => {
@@ -126,7 +142,6 @@ const TeamManagerAuditAndReports = () => {
       valueB = valueB[part];
     }
 
-    // Special handling for priority sorting
     if (sortConfig.key === "request.priority") {
       const priorityA = priorityOrder[valueA];
       const priorityB = priorityOrder[valueB];
@@ -135,7 +150,6 @@ const TeamManagerAuditAndReports = () => {
         : priorityB - priorityA;
     }
 
-    // Special handling for date sorting
     if (sortConfig.key === "request.requestedStartDate") {
       const dateA = new Date(valueA);
       const dateB = new Date(valueB);
@@ -144,7 +158,6 @@ const TeamManagerAuditAndReports = () => {
         : dateB - dateA;
     }
 
-    // Default string/number comparison
     if (valueA < valueB) {
       return sortConfig.direction === "asc" ? -1 : 1;
     }
@@ -218,7 +231,7 @@ const TeamManagerAuditAndReports = () => {
 
     const worksheet = XLSX.utils.json_to_sheet(
       dataToExport.map(
-        ({ employeeName, request, tmStatus, sdmStatus, tmActionDate }) => ({
+        ({ employeeName, request, tmStatus, sdmStatus, hrStatus, tmActionDate }) => ({
           "Employee Name": employeeName,
           "Employee ID": request.ibsEmpId,
           "Start Date": request.requestedStartDate,
@@ -228,6 +241,7 @@ const TeamManagerAuditAndReports = () => {
           Priority: priorityLabels[request.priority],
           "TM Status": tmStatus,
           "SDM Status": sdmStatus || "Pending",
+          "HR Status": getHrStatus(sdmStatus, hrStatus).label,
           "Action Date": tmActionDate || "N/A",
         })
       )
@@ -282,6 +296,26 @@ const TeamManagerAuditAndReports = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
+            </div>
+          </div>
+
+          <div className="w-full sm:w-48">
+            <div className="relative w-full">
+              <select
+                className="appearance-none w-full border border-gray-300 rounded-md px-3 py-2 pr-10 bg-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="">All Statuses</option>
+                <option value="APPROVED">Approved</option>
+                <option value="PENDING">Pending</option>
+                <option value="REJECTED">Rejected</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M7 7l3-3 3 3m0 6l-3 3-3-3" />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
@@ -411,6 +445,12 @@ const TeamManagerAuditAndReports = () => {
                   >
                     SDM Status {getSortIndicator("sdmStatus")}
                   </th>
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                    onClick={() => requestSort("hrStatus")}
+                  >
+                    HR Status {getSortIndicator("hrStatus")}
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Action Date
                   </th>
@@ -424,89 +464,118 @@ const TeamManagerAuditAndReports = () => {
                       request,
                       tmStatus,
                       sdmStatus,
+                      hrStatus,
                       tmActionDate,
                       sdmActionDate,
-                    }) => (
-                      <tr key={request.requestId} className="hover:bg-gray-50">
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {employeeName}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            ID: {request.ibsEmpId}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {new Date(
-                              request.requestedStartDate
-                            ).toLocaleDateString()}{" "}
-                            -{" "}
-                            {new Date(
-                              request.requestedEndDate
-                            ).toLocaleDateString()}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {request.termDuration}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {request.categoryOfReason}
-                          </div>
-                          <div className="text-sm text-gray-500 truncate max-w-xs">
-                            {request.employeeReason}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              priorityStyles[request.priority]
-                            }`}
-                          >
-                            {priorityLabels[request.priority]}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              statusStyles[tmStatus]
-                            }`}
-                          >
-                            {statusLabels[tmStatus]}
-                          </span>
-                          {tmActionDate && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              {new Date(tmActionDate).toLocaleDateString()}
+                      hrActionDate,
+                    }) => {
+                      const hrStatusInfo = getHrStatus(sdmStatus, hrStatus);
+                      const displayHrActionDate = hrStatusInfo.status === "NOT_REVIEWED" ? null : hrActionDate;
+
+                      return (
+                        <tr key={request.requestId} className="hover:bg-gray-50">
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {employeeName}
                             </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              statusStyles[sdmStatus || "PENDING"]
-                            }`}
-                          >
-                            {statusLabels[sdmStatus || "PENDING"]}
-                          </span>
-                          {sdmActionDate && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              {new Date(sdmActionDate).toLocaleDateString()}
+                            <div className="text-sm text-gray-500">
+                              ID: {request.ibsEmpId}
                             </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {tmActionDate
-                            ? new Date(tmActionDate).toLocaleDateString()
-                            : "-"}
-                        </td>
-                      </tr>
-                    )
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {new Date(
+                                request.requestedStartDate
+                              ).toLocaleDateString()}{" "}
+                              -{" "}
+                              {new Date(
+                                request.requestedEndDate
+                              ).toLocaleDateString()}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {request.termDuration}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {request.categoryOfReason}
+                            </div>
+                            <div className="text-sm text-gray-500 truncate max-w-xs">
+                              {request.employeeReason}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                priorityStyles[request.priority]
+                              }`}
+                            >
+                              {priorityLabels[request.priority]}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                statusStyles[tmStatus]
+                              }`}
+                            >
+                              {statusLabels[tmStatus]}
+                            </span>
+                            {tmActionDate && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                {new Date(tmActionDate).toLocaleDateString()}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {sdmStatus ? (
+                              <span
+                                className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  statusStyles[sdmStatus]
+                                }`}
+                              >
+                                {statusLabels[sdmStatus]}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-gray-500">Not Reviewed</span>
+                            )}
+                            {sdmActionDate && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                {new Date(sdmActionDate).toLocaleDateString()}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {hrStatusInfo.status === "NOT_REVIEWED" ? (
+                              <span className="text-sm text-gray-500">{hrStatusInfo.label}</span>
+                            ) : (
+                              <span
+                                className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  statusStyles[hrStatusInfo.status]
+                                }`}
+                              >
+                                {hrStatusInfo.label}
+                              </span>
+                            )}
+                            {displayHrActionDate && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                {new Date(displayHrActionDate).toLocaleDateString()}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {tmActionDate
+                              ? new Date(tmActionDate).toLocaleDateString()
+                              : "-"}
+                          </td>
+                        </tr>
+                      );
+                    }
                   )
                 ) : (
                   <tr>
                     <td
-                      colSpan="7"
+                      colSpan="8"
                       className="px-6 py-4 text-center text-sm text-gray-500"
                     >
                       No matching requests found
