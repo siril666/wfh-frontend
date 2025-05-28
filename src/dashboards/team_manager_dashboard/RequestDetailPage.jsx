@@ -249,7 +249,7 @@ const RequestDetailPage = () => {
           {wfhRequest.attachmentPath && (
             <div className="px-6 pb-6">
               <a
-                href={wfhRequest.attachmentPath}
+                href={`http://localhost:8081`+ wfhRequest.attachmentPath}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center text-indigo-600 hover:text-indigo-800 text-sm"
