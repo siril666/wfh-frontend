@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from "react";
 
 const statusStyles = {
@@ -34,30 +32,79 @@ const priorityOrder = {
 
 const TeamManagerRequestsTable = ({ requests, navigate }) => {
   const [sortedRequests, setSortedRequests] = useState([]);
-  const [sortByPriority, setSortByPriority] = useState(false);
-  const [sortByDateAsc, setSortByDateAsc] = useState(true);
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: 'asc',
+  });
 
   useEffect(() => {
     let sorted = [...requests];
-    sorted.sort((a, b) => {
-      const dateA = new Date(a.request.requestedStartDate);
-      const dateB = new Date(b.request.requestedStartDate);
-      return sortByDateAsc ? dateA - dateB : dateB - dateA;
-    });
-
-    if (sortByPriority) {
+    
+    if (sortConfig.key) {
       sorted.sort((a, b) => {
-        const prioA = priorityOrder[a.request.priority || "LOW"];
-        const prioB = priorityOrder[b.request.priority || "LOW"];
-        return prioA - prioB;
+        // Get values to compare
+        const aValue = sortConfig.key.includes('.') 
+          ? sortConfig.key.split('.').reduce((o, i) => o[i], a)
+          : a[sortConfig.key];
+        const bValue = sortConfig.key.includes('.') 
+          ? sortConfig.key.split('.').reduce((o, i) => o[i], b)
+          : b[sortConfig.key];
+
+        // Handle category sorting
+        if (sortConfig.key === "request.categoryOfReason") {
+          const categoryOrder = {
+            Medical: 1,
+            'Family Medical': 2,
+            Maternity: 3,
+            Permanent: 4,
+            Personal: 5,
+          };
+          const aOrder = categoryOrder[aValue] || 6;
+          const bOrder = categoryOrder[bValue] || 6;
+          return sortConfig.direction === 'asc' 
+            ? aOrder - bOrder 
+            : bOrder - aOrder;
+        }
+
+        // Handle date sorting
+        if (sortConfig.key === "request.requestedStartDate") {
+          const dateA = new Date(aValue);
+          const dateB = new Date(bValue);
+          return sortConfig.direction === 'asc' 
+            ? dateA - dateB 
+            : dateB - dateA;
+        }
+
+        // Handle priority sorting
+        if (sortConfig.key === "request.priority") {
+          const aPriority = priorityOrder[aValue || "LOW"];
+          const bPriority = priorityOrder[bValue || "LOW"];
+          return sortConfig.direction === 'asc' 
+            ? aPriority - bPriority 
+            : bPriority - aPriority;
+        }
+
+        // Default string comparison
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
       });
     }
 
     setSortedRequests(sorted);
-  }, [requests, sortByPriority, sortByDateAsc]);
+  }, [requests, sortConfig]);
 
-  const togglePrioritySort = () => setSortByPriority((prev) => !prev);
-  const toggleDateSort = () => setSortByDateAsc((prev) => !prev);
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
 
   const getHrStatus = (sdmStatus, hrStatus) => {
     if (!sdmStatus || sdmStatus === "PENDING") {
@@ -84,6 +131,11 @@ const TeamManagerRequestsTable = ({ requests, navigate }) => {
     };
   };
 
+  const getSortIndicator = (key) => {
+    if (sortConfig.key !== key) return null;
+    return sortConfig.direction === 'asc' ? '↑' : '↓';
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
@@ -92,31 +144,31 @@ const TeamManagerRequestsTable = ({ requests, navigate }) => {
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
               Employee
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
-              <div className="flex items-center gap-2">
+            <th 
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6 cursor-pointer"
+              onClick={() => requestSort("request.requestedStartDate")}
+            >
+              <div className="flex items-center gap-1">
                 Dates
-                <button
-                  onClick={toggleDateSort}
-                  className="text-gray-500 hover:text-gray-800"
-                  title="Sort by Date"
-                >
-                  {sortByDateAsc ? "⬆️" : "⬇️"}
-                </button>
+                {getSortIndicator("request.requestedStartDate")}
               </div>
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
-              Category
+            <th 
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6 cursor-pointer"
+              onClick={() => requestSort("request.categoryOfReason")}
+            >
+              <div className="flex items-center gap-1">
+                Category
+                {getSortIndicator("request.categoryOfReason")}
+              </div>
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
-              <div className="flex items-center gap-2">
+            <th 
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6 cursor-pointer"
+              onClick={() => requestSort("request.priority")}
+            >
+              <div className="flex items-center gap-1">
                 Priority
-                <button
-                  onClick={togglePrioritySort}
-                  className="text-gray-500 hover:text-gray-800"
-                  title="Sort by Priority"
-                >
-                  {sortByPriority ? "⬆️" : "⬇️"}
-                </button>
+                {getSortIndicator("request.priority")}
               </div>
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
