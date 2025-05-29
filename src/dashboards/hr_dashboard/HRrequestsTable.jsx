@@ -29,8 +29,8 @@ const HRRequestsTable = ({ requests, activeFilter }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({
-    key: "request.requestedStartDate",
-    direction: "desc", // Default: recent first
+    key: "null",
+    direction: "asc", // Default: recent first
   });
   const [groupBy, setGroupBy] = useState("none"); // 'none', 'sdm', or 'team'
   const [expandedGroups, setExpandedGroups] = useState({});
