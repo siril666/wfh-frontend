@@ -106,7 +106,10 @@ const WfhRequestFormEdit = () => {
       .then((res) => {
         toast.success("Request cancelled successfully!");
         setMessage(res.data);
-        navigate("/employee-dashboard");
+        setTimeout(() => {
+          navigate('/');
+          window.location.reload()
+        }, 2000);
       })
       .catch((err) => {
         toast.error(err?.response?.data ?? "Cancellation failed.");
