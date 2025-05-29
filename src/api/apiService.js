@@ -19,6 +19,10 @@ import { axiosInstance8080, axiosInstanceSecurity8080, axiosInstanceSecurity8081
   export const getProfile = () => {
     return axiosInstanceSecurity8080.get(`/users/profile`);
   };
+
+  export const changePassword = (data) => {
+    return axiosInstanceSecurity8080.post('/users/change-password', data);
+  };
   
   // Employee APIs
   export const getRequestsHistory = () => {

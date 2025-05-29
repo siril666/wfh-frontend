@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { getProfile } from "../api/apiService";
+import { changePassword, getProfile, updateProfile } from "../api/apiService";
 
 const EditProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmNewPassword: ""
+  });
   const [profile, setProfile] = useState({
     userName: "",
     ibsEmpId: "",
@@ -17,6 +22,7 @@ const EditProfile = () => {
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [errors, setErrors] = useState({});
+  const [passwordErrors, setPasswordErrors] = useState({});
 
   useEffect(() => {
     const accessToken = localStorage.getItem("accessToken");
@@ -51,6 +57,20 @@ const EditProfile = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const validatePasswordForm = () => {
+    const newErrors = {};
+    
+    if (!passwordForm.currentPassword) newErrors.currentPassword = "Current password is required";
+    if (!passwordForm.newPassword) newErrors.newPassword = "New password is required";
+    else if (passwordForm.newPassword.length < 8) newErrors.newPassword = "Password must be at least 8 characters";
+    if (passwordForm.newPassword !== passwordForm.confirmNewPassword) {
+      newErrors.confirmNewPassword = "Passwords don't match";
+    }
+
+    setPasswordErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setProfile((prev) => ({
@@ -66,22 +86,60 @@ const EditProfile = () => {
     }
   };
 
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    if (passwordErrors[name]) {
+      setPasswordErrors(prev => {
+        const updated = { ...prev };
+        delete updated[name];
+        return updated;
+      });
+    }
+  };
+
   const handleSave = async () => {
     if (!validate()) return;
 
-    const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) {
-      setErrorMsg("Access token missing. Please log in again.");
-      return;
-    }
-
     try {
-      await updateProfile(profile)
+      await updateProfile(profile);
       setSuccessMsg("Profile updated successfully!");
       setIsEditing(false);
+      setErrorMsg("");
     } catch (err) {
       setErrorMsg("Failed to update profile.");
       console.error("Update failed:", err);
+    }
+  };
+
+  const handlePasswordSave = async () => {
+    if (!validatePasswordForm()) return;
+
+    try {
+      const accessToken = localStorage.getItem("accessToken");
+      if (!accessToken) {
+        setErrorMsg("Session expired. Please log in again.");
+        return;
+      }
+
+      console.log(passwordForm);
+
+      const response = await changePassword(passwordForm)
+
+      setSuccessMsg(response.data);
+      setErrorMsg("");
+      setShowPasswordForm(false);
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmNewPassword: ""
+      });
+    } catch (err) {
+      setErrorMsg(err.response?.data || "Failed to change password");
+      console.error("Password change failed:", err);
     }
   };
 
@@ -95,12 +153,6 @@ const EditProfile = () => {
             {successMsg}
           </div>
         )}
-        {errorMsg && (
-          <div className="mb-4 p-3 text-red-700 bg-red-50 rounded-lg text-sm">
-            {errorMsg}
-          </div>
-        )}
-
         <div className="space-y-4">
           {[
             ["User Name", "userName"],
@@ -133,20 +185,86 @@ const EditProfile = () => {
             </div>
           ))}
 
+          {!showPasswordForm && (
+            <button
+              onClick={() => setShowPasswordForm(true)}
+              className="w-full mt-4 text-blue-600 text-sm font-medium hover:text-blue-800"
+            >
+              Change Password
+            </button>
+          )}
+
+          {showPasswordForm && (
+            <div className="mt-6 p-4 border border-gray-200 rounded-lg">
+              <h3 className="text-lg font-medium mb-4">Change Password</h3>
+              {[
+                ["Current Password", "currentPassword", "password"],
+                ["New Password", "newPassword", "password"],
+                ["Confirm New Password", "confirmNewPassword", "password"],
+              ].map(([label, name, type]) => (
+                <div key={name} className="mb-4">
+                  <label className="block font-medium text-sm text-gray-700 mb-1">
+                    {label}
+                  </label>
+                  <input
+                    type={type}
+                    name={name}
+                    value={passwordForm[name]}
+                    onChange={handlePasswordChange}
+                    className={`w-full px-4 py-2 text-sm border rounded-md focus:outline-none ${
+                      passwordErrors[name]
+                        ? "border-red-500 focus:border-red-600"
+                        : "border-gray-300 focus:border-indigo-500"
+                    }`}
+                  />
+                  {passwordErrors[name] && (
+                    <p className="mt-1 text-xs text-red-500">{passwordErrors[name]}</p>
+                  )}
+                </div>
+              ))}
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={() => setShowPasswordForm(false)}
+                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePasswordSave}
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+                >
+                  Save Password
+                </button>
+              </div>
+            </div>
+          )}
+        {errorMsg && (
+          <div className="mb-4 p-3 text-red-700 bg-red-50 rounded-lg text-sm">
+            {errorMsg}
+          </div>
+        )}
           <div className="flex justify-end mt-6 space-x-4">
             {isEditing ? (
-              <button
-                onClick={handleSave}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
-                Save
-              </button>
+              <>
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >
+                  Save Profile
+                </button>
+              </>
             ) : (
               <button
                 onClick={() => setIsEditing(true)}
                 className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
               >
-                Edit
+                Edit Profile
               </button>
             )}
           </div>
