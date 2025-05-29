@@ -88,35 +88,56 @@ const SdmAuditAndReports = () => {
         employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         request.ibsEmpId.toString().includes(searchTerm);
 
-      // Date filter
-      const requestDate = new Date(request.requestedStartDate);
-      requestDate.setHours(0, 0, 0, 0); // Normalize to start of day
-      
-      let matchesDate = true;
+        // Date filter
+        const requestDate = new Date(request.requestedStartDate);
+        requestDate.setHours(0, 0, 0, 0); // Normalize to start of day
 
-      if (dateFilter === "week") {
-        const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-        oneWeekAgo.setHours(0, 0, 0, 0); // Normalize to start of day
-        matchesDate = requestDate >= oneWeekAgo;
-      } else if (dateFilter === "month") {
-        const oneMonthAgo = new Date();
-        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-        oneMonthAgo.setHours(0, 0, 0, 0); // Normalize to start of day
-        matchesDate = requestDate >= oneMonthAgo;
-      } else if (dateFilter === "quarter") {
-        const threeMonthsAgo = new Date();
-        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-        threeMonthsAgo.setHours(0, 0, 0, 0); // Normalize to start of day
-        matchesDate = requestDate >= threeMonthsAgo;
-      } else if (dateFilter === "custom" && startDate && endDate) {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        start.setHours(0, 0, 0, 0);
-        end.setHours(23, 59, 59, 999); // Include entire end date
-        matchesDate = requestDate >= start && requestDate <= end;
-      }
+        let matchesDate = true;
+        let start, end; // Define start/end for custom usage
 
+        if (dateFilter === "week") {
+          // Last 7 days (including today)
+          start = new Date();
+          start.setDate(start.getDate() - 7);
+          start.setHours(0, 0, 0, 0);
+
+          end = new Date();
+          end.setHours(23, 59, 59, 999); // End of today
+
+          matchesDate = requestDate >= start && requestDate <= end;
+        } 
+        else if (dateFilter === "month") {
+          // Last 30 days (including today)
+          start = new Date();
+          start.setMonth(start.getMonth() - 1);
+          start.setHours(0, 0, 0, 0);
+
+          end = new Date();
+          end.setHours(23, 59, 59, 999); // End of today
+
+          matchesDate = requestDate >= start && requestDate <= end;
+        } 
+        else if (dateFilter === "quarter") {
+          // Last 90 days (including today)
+          start = new Date();
+          start.setMonth(start.getMonth() - 3);
+          start.setHours(0, 0, 0, 0);
+
+          end = new Date();
+          end.setHours(23, 59, 59, 999); // End of today
+
+          matchesDate = requestDate >= start && requestDate <= end;
+        } 
+        else if (dateFilter === "custom" && startDate && endDate) {
+          // Custom range (user-provided)
+          start = new Date(startDate);
+          end = new Date(endDate);
+          start.setHours(0, 0, 0, 0);
+          end.setHours(23, 59, 59, 999); // Include full end day
+
+          matchesDate = requestDate >= start && requestDate <= end;
+        }
+        
       // Team filter
       const matchesTeam = teamFilter
         ? teamOwnerName.toLowerCase().includes(teamFilter.toLowerCase())

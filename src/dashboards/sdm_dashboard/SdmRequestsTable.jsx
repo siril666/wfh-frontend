@@ -25,124 +25,127 @@ const priorityLabels = {
   LOW: "Low",
 };
 
+const priorityOrder = {
+  HIGH: 1,
+  MODERATE: 2,
+  LOW: 3,
+};
+
 const SdmRequestsTable = ({ requests, activeFilter }) => {
   const navigate = useNavigate();
   const [expandedTeams, setExpandedTeams] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({
-    key: "request.requestedStartDate",
-    direction: "desc", // Default: recent first
+    key: null, // Changed to null to preserve initial order
+    direction: "asc",
   });
-  const [viewMode, setViewMode] = useState("grouped"); // 'grouped' or 'ungrouped'
+  const [viewMode, setViewMode] = useState("grouped");
+  const [sortedRequests, setSortedRequests] = useState([]);
 
   // Initialize expanded state when requests load
   useEffect(() => {
     const initialExpandedState = {};
     requests.forEach(({ request }) => {
-      initialExpandedState[request.teamOwnerId] = true; // Default expanded
+      initialExpandedState[request.teamOwnerId] = true;
     });
     setExpandedTeams(initialExpandedState);
   }, [requests]);
 
-  // Handle sort request
-  const requestSort = (key) => {
-    let direction = "desc";
-    if (sortConfig.key === key && sortConfig.direction === "desc") {
-      direction = "asc";
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const priorityOrder = {
-    HIGH: 3,
-    MODERATE: 2,
-    LOW: 1,
-  };
-
-  const sortByPriority = (a, b, direction = "asc") => {
-    const aPriority = priorityOrder[a.request.priority] || 0;
-    const bPriority = priorityOrder[b.request.priority] || 0;
-
-    if (aPriority < bPriority) return direction === "asc" ? -1 : 1;
-    if (aPriority > bPriority) return direction === "asc" ? 1 : -1;
-    return 0;
-  };
-
-  // Sort and filter requests
-  const sortedAndFilteredRequests = useMemo(() => {
-    let filteredRequests = [...requests];
-
+  // Apply search filter and sorting
+  useEffect(() => {
+    let filtered = [...requests];
+    
     // Apply search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filteredRequests = filteredRequests.filter(
-        ({ request, employeeName }) => {
-          return (
-            employeeName.toLowerCase().includes(term) ||
-            request.ibsEmpId.toString().includes(term) ||
-            request.employeeReason.toLowerCase().includes(term) ||
-            request.categoryOfReason.toLowerCase().includes(term)
-          );
-        }
-      );
+      filtered = filtered.filter(({ request, employeeName }) => {
+        return (
+          employeeName.toLowerCase().includes(term) ||
+          request.ibsEmpId.toString().includes(term) ||
+          request.employeeReason.toLowerCase().includes(term) ||
+          request.categoryOfReason.toLowerCase().includes(term)
+        );
+      });
     }
 
-    // Apply sorting
+    // Apply sorting if configured
     if (sortConfig.key) {
-      filteredRequests.sort((a, b) => {
-        // Handle nested properties
-        const getValue = (obj, path) =>
-          path.split(".").reduce((o, p) => (o || {})[p], obj);
+      filtered.sort((a, b) => {
+        // Get values to compare
+        const aValue = sortConfig.key.includes('.') 
+          ? sortConfig.key.split('.').reduce((o, i) => o[i], a)
+          : a[sortConfig.key];
+        const bValue = sortConfig.key.includes('.') 
+          ? sortConfig.key.split('.').reduce((o, i) => o[i], b)
+          : b[sortConfig.key];
 
-        const aValue = getValue(a, sortConfig.key);
-        const bValue = getValue(b, sortConfig.key);
-
-        // Handle priority sort
-        if (sortConfig.key === "request.priority") {
-          return sortByPriority(a, b, sortConfig.direction);
+        // Handle category sorting
+        if (sortConfig.key === "request.categoryOfReason") {
+          const categoryOrder = {
+            Medical: 1,
+            'Family Medical': 2,
+            Maternity: 3,
+            Permanent: 4,
+            Personal: 5,
+          };
+          const aOrder = categoryOrder[aValue] || 6;
+          const bOrder = categoryOrder[bValue] || 6;
+          return sortConfig.direction === 'asc' 
+            ? aOrder - bOrder 
+            : bOrder - aOrder;
         }
 
-        // Handle date sort
-        if (sortConfig.key.includes("Date")) {
+        // Handle date sorting
+        if (sortConfig.key === "request.requestedStartDate") {
           const dateA = new Date(aValue);
           const dateB = new Date(bValue);
-          return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
+          return sortConfig.direction === 'asc' 
+            ? dateA - dateB 
+            : dateB - dateA;
         }
 
-        // Sort by category (custom order)
-        if (sortConfig.key === "request.categoryOfReason") {
-          const categoryOrder =
-            sortConfig.direction === "asc"
-              ? {
-                  Personal: 5,
-                  Permanent: 4,
-                  Medical: 1,
-                  Maternity: 3,
-                  "Family Medical": 2,
-                }
-              : {
-                  "Family Medical": 4,
-                  Maternity: 3,
-                  Medical: 5,
-                  Permanent: 2,
-                  Personal: 1,
-                };
-          return categoryOrder[aValue] - categoryOrder[bValue];
+        // Handle priority sorting
+        if (sortConfig.key === "request.priority") {
+          const aPriority = priorityOrder[aValue || "LOW"];
+          const bPriority = priorityOrder[bValue || "LOW"];
+          return sortConfig.direction === 'asc' 
+            ? aPriority - bPriority 
+            : bPriority - aPriority;
         }
 
-        // Default comparison for other fields
+        // Default comparison
         if (aValue < bValue) {
-          return sortConfig.direction === "asc" ? -1 : 1;
+          return sortConfig.direction === 'asc' ? -1 : 1;
         }
         if (aValue > bValue) {
-          return sortConfig.direction === "asc" ? 1 : -1;
+          return sortConfig.direction === 'asc' ? 1 : -1;
         }
         return 0;
       });
     }
 
-    return filteredRequests;
+    setSortedRequests(filtered);
   }, [requests, searchTerm, sortConfig]);
+
+  const toggleTeamExpand = (teamOwnerId) => {
+    setExpandedTeams((prev) => ({
+      ...prev,
+      [teamOwnerId]: !prev[teamOwnerId],
+    }));
+  };
+
+  const requestSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIndicator = (key) => {
+    if (sortConfig.key !== key) return null;
+    return sortConfig.direction === "asc" ? " ↑" : " ↓";
+  };
 
   // Group requests by teamOwnerId if grouping is enabled
   const groupedRequests = useMemo(() => {
@@ -151,12 +154,12 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
         all: {
           teamName: "All Requests",
           teamOwnerName: "",
-          requests: sortedAndFilteredRequests,
+          requests: sortedRequests,
         },
       };
     }
 
-    return sortedAndFilteredRequests.reduce((acc, requestData) => {
+    return sortedRequests.reduce((acc, requestData) => {
       const { request, teamOwnerName, teamName } = requestData;
       const ownerId = request.teamOwnerId;
 
@@ -170,19 +173,7 @@ const SdmRequestsTable = ({ requests, activeFilter }) => {
       acc[ownerId].requests.push(requestData);
       return acc;
     }, {});
-  }, [sortedAndFilteredRequests, viewMode]);
-
-  const toggleTeamExpand = (teamOwnerId) => {
-    setExpandedTeams((prev) => ({
-      ...prev,
-      [teamOwnerId]: !prev[teamOwnerId],
-    }));
-  };
-
-  const getSortIndicator = (key) => {
-    if (sortConfig.key !== key) return null;
-    return sortConfig.direction === "asc" ? " ↑" : " ↓";
-  };
+  }, [sortedRequests, viewMode]);
 
   return (
     <div className="space-y-4">
