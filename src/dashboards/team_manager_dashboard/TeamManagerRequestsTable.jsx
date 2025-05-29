@@ -285,17 +285,30 @@ const TeamManagerRequestsTable = ({ requests, navigate }) => {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() =>
-                        navigate(
-                          `/tm-dashboard/request-details/${request.request.requestId}`
-                        )
-                      }
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
-                    >
-                      View
-                    </button>
-                  </td>
+                      { request.tmStatus === "PENDING" ? (
+                        <button
+                          onClick={() =>
+                            navigate(
+                              `/tm-dashboard/request-details/${request.request.requestId}`
+                            )
+                          }
+                          className="text-green-600 hover:text-green-900"
+                        >
+                          Review
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() =>
+                            navigate(
+                              `/tm-dashboard/request-details/${request.request.requestId}`
+                            )
+                          }
+                          className="text-indigo-600 hover:text-indigo-900 mr-4"
+                        >
+                          View
+                        </button>
+                      )}
+                        </td>
                 </tr>
               );
             })
